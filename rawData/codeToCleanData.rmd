@@ -10,7 +10,10 @@ This code changes the rawData_wayPointsCompletos.csv to data suitable to analysi
 library("methods")
 library("xml2")
 library(tidyverse)
+library(sf) #gestion de archivos de forma
+
 ```
+
 ```{r}
 WP_COSECHA <- read.csv("./rawData_wayPointsCOMPLETOS.csv", stringsAsFactors = FALSE)
 ```
@@ -62,13 +65,36 @@ WP_COSECHA_sP$zona[WP_COSECHA_sP$zona == "falta"] <- "zonaBaja"
 
 
 colnames(WP_COSECHA_sP)[1]<- "ID_REC"
+write.csv(WP_COSECHA_sP, "./cleanData_wayPointsCoffee_latlon.csv", row.names = FALSE)
 ```
 
 
-Now we have a clean data frame. We use this csv to create, using latlong X_UTM and Y_UTM coordinate values (with any GIS program)
+Now we have a clean data frame. We use this csv to create, using latlong, the X_UTM and Y_UTM coordinate. The Lon Lat were in WGS84 and UTM region is 15N
 
 ```{r}
-write.csv(WP_COSECHA_sP, "./cleanData_wayPointsCoffee_latlon.csv", row.names = FALSE)
+# Transformar csv en objeto espacial
+SF_Cafe <- WP_COSECHA_sP %>% 
+  st_as_sf(coords = c("lon", #nombre de la columna con la longitud
+                      "lat"), #nombre de la columna con la latitud
+           crs = "EPSG:4326") #clave del datum WGS84
+
+# Reproyectar SF de WGS84 a UTM 
+SF_Cafe_UTM <- SF_Cafe %>% 
+  st_transform(crs = "EPSG:32615") #clave de la zona UTM 15N
+
+# Crear columnas con las coordenadas UTM
+SF_Cafe_UTM <- SF_Cafe_UTM %>% 
+  mutate(x_UTM = st_coordinates(.)[,1],
+         y_UTM = st_coordinates(.)[,2])
+
+WP_COSECHA_sP$x_UTM <- SF_Cafe_UTM$x_UTM
+WP_COSECHA_sP$y_UTM <- SF_Cafe_UTM$y_UTM
+```
+
+
+Now we send this to the data directory for analysis 
+```{r}
+write.csv(WP_COSECHA_sP, "../distributionAnalisis/data/cleanData_wayPointsCoffee_UTM.csv", row.names = FALSE)
 ```
 
 
