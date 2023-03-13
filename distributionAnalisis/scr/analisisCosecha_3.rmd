@@ -1,0 +1,600 @@
+---
+title: "Avances trayectoria"
+output: html_notebook
+---
+
+This 3rd version has other order than version2.
+
+```{r}
+library(ggplot2)
+library(viridis)
+library(dplyr)
+library(tidyverse)
+mycols <- c("#021128","#1b4a64", "#3585a0", "#759580", "#c78f34", "#fd9706","#fdb81c","#fbdb30")
+mycols3a <-c("#021128", "#fd9706", "#3585a0")
+mycols3b <-c("#1b4a64", "#fdb81c", "#759580")
+```
+
+
+# I. Arreglo de datos
+
+## I.1. Arreglo Inicial y normalización de coordenadas UTM
+
+```{r}
+WP_COSECHA_UTM_SP <- read.csv("~/Desktop/archivosTrabajandose_aborrar/codigos_Cosecha/analisisTrayectorias/Archivo/puntosCafetales_UTM_Tabla.csv", stringsAsFactors = FALSE )
+
+WP_COSECHA_UTM_SP <- WP_COSECHA_UTM_SP %>%
+    mutate(finca = replace(finca, finca == "Irlanda", "I")) %>%
+  mutate(finca = replace(finca, finca == "Hamburgo", "H"))
+
+WP_COSECHA_UTM_SP$zona[WP_COSECHA_UTM_SP$zona == "falta"] <- "zonaBaja"
+
+WP_COSECHA_UTM_SP <- WP_COSECHA_UTM_SP %>% rowwise() %>% 
+  group_by(ID_REC, pante)%>%  #esto debe seguirse con lo de aajo
+  mutate(xNorm = x_UTM - min(x_UTM)) %>%
+  mutate(yNorm = y_UTM - min(y_UTM))
+
+```
+
+## I.2. Definicion de vectores entre puntos.
+
+Ahi la norma del vector es la distancia y el angulo entre ellos es el turning angle- Para eso, primero voy a definir vectores de movimiento como la resta de cada dos vectores. Después eso lo voy a paar a coordinaradas polares, y después voy a hacer la resta de los ángulos. 
+```{r}
+WP_COSECHA_UTM_SP$DIF_VECTOR_X <- 0
+WP_COSECHA_UTM_SP$DIF_VECTOR_Y <- 0
+WP_COSECHA_UTM_SP$DIF_ANGLE <-0  #este es el angulo entre vector, pero aquí necesito la resta de angulos para saber la ditribucion de angulos
+WP_COSECHA_UTM_SP$DIF_ANGLE_CHANGE <-0 #este es el que voy a usar 
+WP_COSECHA_UTM_SP$DIF_NORM <-0  #esta es la distancia real entre puntos, nos sirve para graficar el angulo
+
+# aqui completo los primeros
+
+for (i in (1:dim(WP_COSECHA_UTM_SP)[1])){ 
+  if (WP_COSECHA_UTM_SP$proceso[i] != "inicio"){
+  WP_COSECHA_UTM_SP$DIF_VECTOR_X[i] <-  WP_COSECHA_UTM_SP$xNorm[i]-WP_COSECHA_UTM_SP$xNorm[i-1]
+  WP_COSECHA_UTM_SP$DIF_VECTOR_Y[i] <-  WP_COSECHA_UTM_SP$yNorm[i]-WP_COSECHA_UTM_SP$yNorm[i-1]
+  WP_COSECHA_UTM_SP$DIF_NORM[i] <- sqrt(WP_COSECHA_UTM_SP$DIF_VECTOR_X[i]**2+ WP_COSECHA_UTM_SP$DIF_VECTOR_Y[i]**2)
+  WP_COSECHA_UTM_SP$DIF_ANGLE[i] <- acos(WP_COSECHA_UTM_SP$DIF_VECTOR_X[i]/WP_COSECHA_UTM_SP$DIF_NORM[i])
+  }
+}
+ 
+for (i in (1:dim(WP_COSECHA_UTM_SP)[1])){  
+  if (WP_COSECHA_UTM_SP$proceso[i] != "inicio"){
+ WP_COSECHA_UTM_SP$DIF_ANGLE_CHANGE[i] <-WP_COSECHA_UTM_SP$DIF_ANGLE[i]- WP_COSECHA_UTM_SP$DIF_ANGLE[i-1]
+  }
+}
+
+head(WP_COSECHA_UTM_SP)
+```
+
+
+
+# II. Mapa general y alturas 
+
+##. II.1. Mapa general
+
+
+```{r}
+#con todo el inicio normalizo por algun factor (aqui por ID, y asi grafico)
+
+mapaCosecha_Ir<- WP_COSECHA_UTM_SP %>% 
+  rowwise() %>% 
+  group_by(ID_REC)%>%  #esto debe seguirse con lo de aajo
+  mutate(deltaAc = cumsum(delta))%>%
+  filter(finca == "I")%>%
+  #filter(ID_REC == "Ger1")%>%
+  unite("ID_REC_pante", ID_REC, pante, sep = "_", remove = FALSE) %>%
+  ggplot(aes(x= xNorm, y = yNorm)) +
+  geom_path(aes(col= as.numeric(deltaAc)),size=1)+
+  geom_point(size=1)+ # es importante que sea path, porque así lo hace según coo estan ordenados los
+  #geom_text(aes(label=arbol.ID),hjust=0, vjust=0)+
+  scale_color_viridis_c()+
+ # geom_point(aes(col= zona))+
+  facet_wrap(~ID_REC, ncol=3, scales = "free")+
+  theme(panel.spacing = unit(0.8, "lines"), text = element_text(size = 15))+
+  theme_bw()+
+  labs(x= "X_norm", y= "Y_norm", col= "Minutos")
+
+
+mapaCosecha_ham<- WP_COSECHA_UTM_SP %>% 
+  rowwise() %>% 
+  group_by(ID_REC)%>%  #esto debe seguirse con lo de aajo
+  mutate(deltaAc = cumsum(delta))%>%
+  filter(finca == "H")%>%
+  #filter(ID_REC == "Ger1")%>%
+  unite("ID_REC_pante", ID_REC, pante, sep = "_", remove = FALSE) %>%
+  ggplot(aes(x= xNorm, y = yNorm)) +
+  geom_path(aes(col= as.numeric(deltaAc)),size=1)+
+  geom_point(size=1)+ # es importante que sea path, porque así lo hace según coo estan ordenados los
+  #geom_text(aes(label=arbol.ID),hjust=0, vjust=0)+
+  scale_color_viridis_c()+
+ # geom_point(aes(col= zona))+
+  facet_wrap(~ID_REC, ncol=3, scales = "free")+
+  theme(panel.spacing = unit(0.8, "lines"), text = element_text(size = 15))+
+  theme_bw()+
+  labs(x= "X_norm", y= "Y_norm", col= "Minutos")
+
+mapaCosecha_ham
+mapaCosecha_Ir
+```
+
+
+
+## II.2. Mapa por pante
+
+```{r}
+mapaCosecha_Ir_pante<- WP_COSECHA_UTM_SP %>% 
+  rowwise() %>% 
+  group_by(ID_REC, pante)%>%  #esto debe seguirse con lo de aajo
+  mutate(deltaAc = cumsum(delta))%>%
+  filter(finca == "I")%>%
+  unite("ID_REC_pante", ID_REC, pante, sep = "_", remove = FALSE) %>%
+  #filter(!(ID_REC_pante == "Ger2_1"))%>%
+  ggplot(aes(x= xNorm, y = yNorm)) +
+  geom_path(aes(col= as.numeric(deltaAc)),size=3)+
+  geom_point(size=1)+ # es importante que sea path, porque así lo hace según coo estan ordenados los
+  #geom_text(aes(label=arbol.ID),hjust=0, vjust=0)+
+  scale_color_viridis_c()+
+ # geom_point(aes(col= zona))+
+  facet_wrap(~ID_REC_pante, ncol=3, scales = "free")+
+  theme(panel.spacing = unit(0.8, "lines"), text = element_text(size = 15))+
+  theme_bw()+
+  labs(x= "X_norm", y= "Y_norm", col= "Minutos")
+
+
+mapaCosecha_Ham_pante<- WP_COSECHA_UTM_SP %>% 
+  rowwise() %>% 
+  group_by(ID_REC, pante)%>%  #esto debe seguirse con lo de aajo
+  mutate(deltaAc = cumsum(delta))%>%
+  filter(finca == "H")%>%
+  unite("ID_REC_pante", ID_REC, pante, sep = "_", remove = FALSE) %>%
+ # filter(ID_REC_pante == "Fran11_1")%>%
+  ggplot(aes(x= xNorm, y = yNorm)) +
+  geom_path(aes(col= as.numeric(deltaAc)), size=3)+
+  geom_point(size=1)+ # es importante que sea path, porque así lo hace según coo estan ordenados los
+  #geom_text(aes(label=arbol.ID),hjust=0, vjust=0)+
+  scale_color_viridis_c()+
+ # geom_point(aes(col= zona))+
+  facet_wrap(~ID_REC_pante, ncol=3, scales = "free")+
+  theme(panel.spacing = unit(0.8, "lines"), text = element_text(size = 15))+
+  theme_bw()+
+  labs(x= "X_norm", y= "Y_norm", col= "Minutos")
+
+mapaCosecha_Ir_pante
+mapaCosecha_Ham_pante
+```
+
+## II.3.Alturas
+
+```{r}
+WP_COSECHA_UTM_SP$alturaM <- WP_COSECHA_UTM_SP$altura..ft *0.3048  #esto para pasarlo a metros WP_COSECHA_sP
+
+
+pAlturas <- WP_COSECHA_UTM_SP %>%
+  mutate(finca = replace(finca, finca == "Irlanda", "I")) %>%
+  mutate(finca = replace(finca, finca == "Hamburgo", "H")) %>%
+  unite("finca_zona", finca, zona, sep = "_", remove = FALSE) %>%
+  filter(!(proceso == "pausa")) %>%
+  filter(!(proceso == "final"))%>%
+  ggplot(aes(x= arbol.ID, y=alturaM)) +
+  geom_point(aes(col=(finca_zona))) +
+  scale_color_manual(values= mycols)+
+  facet_wrap(~finca, scales = "free_x")+
+  theme(panel.spacing = unit(0.8, "lines"), text = element_text(size = 15))+
+  theme_bw()+
+  labs(x= "Arboles cosechados", y= "Altura (m)", col= "Zona")
+
+pAlturas
+
+```
+  
+
+# III.Distribuciones
+
+## III. 1. Distancias
+
+```{r eval=FALSE, include=FALSE}
+hisDist <-WP_COSECHA_UTM_SP %>%
+  mutate(finca = replace(finca, finca == "Irlanda", "I")) %>%
+  mutate(finca = replace(finca, finca == "Hamburgo", "H")) %>%
+   filter(proceso== "durante")%>%
+  filter(!(DIF_NORM == 0))%>%  #quitar errores (ver si quitar en el general)
+  unite("finca_zona", finca, zona, sep = "_", remove = FALSE) %>%
+ ggplot(aes(x= as.numeric(DIF_NORM), y=(..count..)/tapply(..count..,..PANEL..,sum)[..PANEL..])) +
+  geom_histogram(binwidth=1, aes(fill=as.character(finca_zona))) +
+  scale_fill_manual(values=mycols)+
+  facet_wrap(~finca, ncol = 2)+
+   theme(panel.spacing = unit(0.8, "lines"), text = element_text(size = 15))+
+  theme_bw()+ 
+   labs(x= "Distancia", y= "Proporción de árboles", fill= "finca")
+
+hisDist
+```
+
+```{r}
+hisDist_frec <-WP_COSECHA_UTM_SP %>%
+  mutate(finca = replace(finca, finca == "Irlanda", "I")) %>%
+  mutate(finca = replace(finca, finca == "Hamburgo", "H")) %>%
+   filter(proceso== "durante")%>%
+  filter(!(DIF_NORM == 0))%>%  #quitar errores (ver si quitar en el general)
+  unite("finca_zona", finca, zona, sep = "_", remove = FALSE) %>%
+ ggplot(aes(x= as.numeric(DIF_NORM))) +
+  geom_histogram(binwidth=1, aes(fill=as.character(finca_zona))) +
+  scale_fill_manual(values=mycols)+
+  facet_wrap(~finca*zona, ncol = 2)+
+   theme(panel.spacing = unit(0.8, "lines"), text = element_text(size = 15))+
+  theme_bw()+ 
+   labs(x= "Distancia", y= "Frecuencia", fill= "finca")
+
+hisDist_frec
+```
+
+### III.2 Angles
+
+```{r}
+WP_COSECHA_UTM_SP$DIF_ANGLE_CHANGE_DEG <- WP_COSECHA_UTM_SP$DIF_ANGLE_CHANGE*360/(2*pi)
+
+polarAngle_frec <-WP_COSECHA_UTM_SP %>%
+  mutate(finca = replace(finca, finca == "Irlanda", "I")) %>%
+  mutate(finca = replace(finca, finca == "Hamburgo", "H")) %>%
+  mutate(ANG_DEG = DIF_ANGLE_CHANGE*360/2*pi) %>%
+   filter(proceso== "durante")%>%
+  filter(!(DIF_NORM == 0))%>%  #quitar errores (ver si quitar en el general)
+  unite("finca_zona", finca, zona, sep = "_", remove = FALSE) %>%
+  ggplot(aes(x = ANG_DEG, fill = as.character(finca_zona))) +
+  geom_histogram(binwidth = 20, boundary = 0) +
+  scale_fill_manual(values=mycols)+
+  coord_polar(theta="x", start=3*pi/2, direction=-1)+
+    scale_x_continuous(breaks=seq(0,360,30),
+                            limits=c(0,360))+
+  facet_wrap(~finca, ncol = 2)+
+   theme(panel.spacing = unit(0.8, "lines"), text = element_text(size = 15))+
+  theme_bw()+ 
+   labs(fill= "finca")
+
+polarAngle_frec
+```
+
+Aqui es la muestra de que cauchy soliuta no funciona, va a tener que ser la suma de dos, probablemente 
+
+```{r}
+
+WP_COSECHA_UTM_SP$COS_DIF_ANGLE_CHANGE <- cos(WP_COSECHA_UTM_SP$DIF_ANGLE_CHANGE)
+mu_datos <- mean(WP_COSECHA_UTM_SP$DIF_ANGLE_CHANGE, na.rm = TRUE)
+rho_datos <- mean(WP_COSECHA_UTM_SP$COS_DIF_ANGLE_CHANGE, na.rm = TRUE)
+
+
+library(circular)
+
+cauchyRandom<- as.data.frame(rwrappedcauchy(1000, mu = mu_datos, rho = rho_datos, control.circular=list()))
+
+cauchyRandom$x_DEG <- cauchyRandom$x* 360/(2*pi)
+
+
+polarCauchy <- 
+  cauchyRandom %>%
+  ggplot(aes(x = x_DEG)) +
+  geom_histogram(binwidth = 20, boundary = 0) +
+  scale_fill_manual(values=mycols)+
+  coord_polar(theta="x", start=3*pi/2, direction=-1)+
+    scale_x_continuous(breaks=seq(0,360,30),
+                            limits=c(0,360))+
+   theme(panel.spacing = unit(0.8, "lines"), text = element_text(size = 15))+
+  theme_bw()
+
+
+```
+
+
+
+Ahora vamos a hacer un mapa de distribuciones de cauchy
+
+
+```{r}
+
+library(circular)
+
+
+
+for (i_mu in seq(0,2*pi, pi/3)){
+  for (i_rho in seq(0,1, 6)){
+  cauchyR<- as.data.frame (rwrappedcauchy(1000, mu = i_mu, rho = i_rho, control.circular=list()))
+  
+}
+}
+cauchyRandom<- as.data.frame(rwrappedcauchy(1000, mu = mu_datos, rho = rho_datos, control.circular=list()))
+
+cauchyRandom$x_DEG <- cauchyRandom$x* 360/(2*pi)
+
+
+polarCauchy <- 
+  cauchyRandom %>%
+  ggplot(aes(x = x_DEG)) +
+  geom_histogram(binwidth = 20, boundary = 0) +
+  scale_fill_manual(values=mycols)+
+  coord_polar(theta="x", start=3*pi/2, direction=-1)+
+    scale_x_continuous(breaks=seq(0,360,30),
+                            limits=c(0,360))+
+   theme(panel.spacing = unit(0.8, "lines"), text = element_text(size = 15))+
+  theme_bw()
+
+
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+```{r eval=FALSE, include=FALSE}
+hist_Tiempos<-WP_COSECHA_UTM_SP %>%
+  unite("finca_zona", finca, zona, sep = "_", remove = FALSE) %>%
+  ggplot(aes(x=delta))+
+  geom_histogram(binwidth=1, aes(fill=finca_zona))+
+  facet_wrap(~finca)+
+  scale_fill_manual(values= mycols)+  
+  theme(panel.spacing = unit(0.8, "lines"), text = element_text(size = 15))+
+  theme_bw()+
+  labs(x= "Tiempo por árbol", y= "Cantidad de árboles", col= "Zona")
+```
+
+
+
+Ahora vamos a ver los valores.
+
+
+```{r}
+p_salto_I <- dim(WP_COSECHA_UTM_SP %>% filter(finca== "I")  %>% filter(SALTO== "SI"))[1]/dim(WP_COSECHA_UTM_SP %>% filter(finca== "I"))[1]
+
+p_salto_H <- dim(WP_COSECHA_UTM_SP %>% filter(finca== "H")  %>% filter(SALTO== "SI"))[1]/dim(WP_COSECHA_UTM_SP %>% filter(finca== "H"))[1]
+
+saltos_I <- (WP_COSECHA_UTM_SP %>% filter(finca== "I")  %>% filter(SALTO== "SI"))
+l_salto_I <-  range(saltos_I$dPuntos) 
+
+saltos_H <- (WP_COSECHA_UTM_SP %>% filter(finca== "H")  %>% filter(SALTO== "SI"))
+l_salto_H <-  range(saltos_H$dPuntos) 
+
+
+```
+
+
+
+
+
+
+
+
+PARA DISTACNICAS
+```{r}
+
+
+pDistancias_total_I <- WP_COSECHA_UTM_SP %>%
+  mutate(finca = replace(finca, finca == "Irlanda", "I")) %>%
+  mutate(finca = replace(finca, finca == "Hamburgo", "H")) %>%
+   filter(finca == "I")%>%
+   filter(!(dPuntos ==0))%>%
+  unite("finca_zona", finca, zona, sep = "_", remove = FALSE) %>%
+ # filter(!(proceso == "pausa")) %>%
+#  filter(!(proceso == "final"))%>%
+  ggplot(aes(x= arbol.ID, y=dPuntos)) +
+  geom_point(aes(col=(finca_zona))) +
+  geom_line()+
+  scale_color_manual(values= mycols[c(5,6,7,8)])+
+  facet_wrap(~ID_REC, scales = "free_x")+
+  theme(panel.spacing = unit(0.8, "lines"), text = element_text(size = 15))+
+  theme_bw()+
+  labs(x= "Arboles cosechados", y= "Distancia con árbol anterior", col= "Zona")
+
+
+
+pDistancias_Car12_I <- WP_COSECHA_UTM_SP %>%
+  mutate(finca = replace(finca, finca == "Irlanda", "I")) %>%
+  mutate(finca = replace(finca, finca == "Hamburgo", "H")) %>%
+   filter(finca == "I")%>%
+   filter(!(dPuntos ==0))%>%
+  filter(ID_REC == "Car12")%>%
+  unite("finca_zona", finca, zona, sep = "_", remove = FALSE) %>%
+ # filter(!(proceso == "pausa")) %>%
+#  filter(!(proceso == "final"))%>%
+  ggplot(aes(x= arbol.ID, y=dPuntos)) +
+  geom_point(aes(col=(finca_zona))) +
+  geom_line()+
+  geom_segment(aes(x = 0, y =minI, xend = 210, yend = minI), color= "darkgreen", size= 0.2)+
+  geom_segment(aes(x = 0, y =maxI, xend = 210, yend = maxI), color= "darkgreen", size= 0.2)+
+  scale_color_manual(values= mycols[c(5,6,7,8)])+
+  facet_wrap(~ID_REC, scales = "free_x")+
+  theme(panel.spacing = unit(0.8, "lines"), text = element_text(size = 15))+
+  theme_bw()+
+  labs(x= "Arboles cosechados", y= "Distancia con árbol anterior", col= "Zona")
+
+
+
+
+```
+median: 4.042
+1q 2.5
+min 0 
+3q 5.7
+max 23.4
+
+
+PANTESSSS
+
+
+```{r}
+
+pDistancias_pante_I <- WP_COSECHA_UTM_SP_TOTAL %>%
+  mutate(finca = replace(finca, finca == "Irlanda", "I")) %>%
+  mutate(finca = replace(finca, finca == "Hamburgo", "H")) %>%
+   filter(finca == "I")%>%
+  filter(proceso== "durante")%>%
+  unite("finca_zona", finca, zona, sep = "_", remove = FALSE) %>%
+ # filter(!(proceso == "pausa")) %>%
+#  filter(!(proceso == "final"))%>%
+  ggplot(aes(x= arbol.ID, y=dPuntos)) +
+  geom_point(aes(col=(finca_zona))) +
+  geom_line()+
+  scale_color_manual(values= mycols[c(5,6,7,8)])+
+  facet_wrap(~ID_REC, scales = "free_x")+
+  theme(panel.spacing = unit(0.8, "lines"), text = element_text(size = 15))+
+  theme_bw()+
+  labs(x= "Arboles cosechados", y= "Distancia con árbol anterior", col= "Zona")
+
+
+
+pDistancias_pante_H <- WP_COSECHA_UTM_SP_TOTAL %>%
+  mutate(finca = replace(finca, finca == "Irlanda", "I")) %>%
+  mutate(finca = replace(finca, finca == "Hamburgo", "H")) %>%
+   filter(finca == "H")%>%
+  filter(proceso== "durante")%>%
+  unite("finca_zona", finca, zona, sep = "_", remove = FALSE) %>%
+ # filter(!(proceso == "pausa")) %>%
+#  filter(!(proceso == "final"))%>%
+  ggplot(aes(x= arbol.ID, y=dPuntos)) +
+  geom_point(aes(col=(finca_zona))) +
+  geom_line()+
+  scale_color_manual(values= mycols)+
+  facet_wrap(~ID_REC, scales = "free_x")+
+  theme(panel.spacing = unit(0.8, "lines"), text = element_text(size = 15))+
+  theme_bw()+
+  labs(x= "Arboles cosechados", y= "Distancia con árbol anterior", col= "Zona")
+
+
+
+
+
+
+
+
+
+
+```
+
+
+
+
+
+
+
+Aquí voy a sacar los datos importantes de la maduración
+
+```{r}
+
+COSECHA_RES <- WP_COSECHA_UTM_SP%>%
+  rowwise() %>%
+  group_by(ID_REC, finca, pante)%>%
+  summarise(arbolesTotales = sum(arboles), tiempoTotal = sum(delta), alturaCambio = max(alturaM)- min(alturaM), distX = max(x_UTM)-min(x_UTM), distY = max(y_UTM)-min(y_UTM), distAc = sum(dPuntos), distMean = mean(dPuntos))%>%
+  mutate(arboles.hora = arbolesTotales/tiempoTotal*60, area = distX * distY)%>%
+ mutate(area.hora = area/tiempoTotal*60, dist.hora = distAc/tiempoTotal*60)
+
+COSECHA_RES$tiempo.arbol <- COSECHA_RES$tiempoTotal/COSECHA_RES$arbolesTotales
+
+tiemposArboles <- COSECHA_RES %>%
+ ggplot (aes(x=finca, y=arboles.hora, fill=finca)) +
+    geom_boxplot() +
+    scale_fill_viridis(discrete = TRUE, alpha=0.6) +
+    geom_jitter(color="black", size=0.4, alpha=0.9) +
+    theme(
+      legend.position="none",
+      plot.title = element_text(size=11)
+    ) +
+    ggtitle("A boxplot with jitter") +
+    xlab("")
+ 
+#verificar con calma porque salen mal los promedio.s 
+
+COSECHA_RES_2 <- COSECHA_RES %>%
+  rowwise()%>% 
+  group_by(finca) %>%
+  summarise(min())
+
+
+
+```
+
+
+
+Este no queda
+
+```{r}
+library(ggbiplot)
+
+# AQUI HAY UN CODIGO MUY COOL PARA PODER HACER UN PCA POR SECCIONES DEL DATA FRAME Y DSPUES GRAFICARLO (PONIENDO LAS NUEVAS COORDENADAS)
+
+WP_COSECHA_UTM_SP_P <-WP_COSECHA_UTM_SP  %>% 
+  rowwise() %>% 
+  group_by(ID_REC, pante)%>%  #esto debe seguirse con lo de aajo
+  mutate(xPCA = prcomp(WP_COSECHA_UTM_SP[,c(29:30)], center = TRUE,scale. = TRUE)$x[,1]) %>%
+  mutate(yPCA = prcomp(WP_COSECHA_UTM_SP[,c(29:30)], center = TRUE,scale. = TRUE)$x[,2])
+  
+mapaCosecha_ham_PCA <- WP_COSECHA_UTM_SP_P %>% 
+  #esto debe seguirse con lo de aajo
+  filter(finca == "H")%>%
+  unite("ID_REC_pante", ID_REC, pante, sep = "_", remove = FALSE) %>%
+  ggplot(aes(x= xPCA, y = yPCA)) +
+  geom_point(aes(col= zona))+
+  geom_path()+
+  facet_wrap(~ID_REC_pante, ncol=3, scales = "free")+
+  scale_color_manual(values=mycols)+
+    theme(panel.spacing = unit(0.8, "lines"), text = element_text(size = 15))+
+  theme_bw()+ 
+  labs(x= "X_norm", y= "Y_norm", col= "Zona")
+  
+  
+WP_fran11 <- WP_COSECHA_UTM_SP %>%
+  filter(ID_REC == "Fran11")
+  
+cosechaFran11.pca <- prcomp(WP_fran11[,c(29:30)], center = TRUE,scale. = TRUE)
+ggbiplot(cosechaFran11.pca)
+
+WP_fran11 <- WP_fran11 %>%
+  mutate(xPCA = cosechaFran11.pca$x[,1], yPCA= cosechaFran11.pca$x[,2])
+plot(WP_fran11$xPCA, WP_fran11$yPCA)
+
+```
+
+  
+
+
+
+
+II. 2. Base marcando los saltos
+```{r}
+#"Aqui vamos a definir, separar los saltos"
+#primero vemos, quitando los 0 (asmimos que fueron error y solo durante los durantes, vemos rango) 
+
+bDatosIRL_DU <- WP_COSECHA_UTM_SP %>%
+  filter(finca=="I") %>%
+   filter(!(DIF_NORM ==0))%>%
+ filter(proceso=="durante")
+
+bDatosHAM_DU <- WP_COSECHA_UTM_SP %>%
+  filter(finca=="H") %>%
+   filter(!(DIF_NORM ==0))%>%
+ filter(proceso=="durante")
+
+minI <- min(bDatosIRL_DU$DIF_NORM)
+maxI <- max(bDatosIRL_DU$DIF_NORM)
+minH <- min(bDatosHAM_DU$DIF_NORM)
+maxH <- max(bDatosHAM_DU$DIF_NORM)
+
+
+###bueno aquí con esto marqué lo que según yo eran saltos en función de cuando estaban en el máximo del durante..
+
+WP_COSECHA_UTM_SP<- WP_COSECHA_UTM_SP %>% mutate(SALTO = ifelse(finca == "I" & proceso == "reinicio" & DIF_NORM > maxI, "SI", ifelse(finca == "H" & proceso == "reinicio" & DIF_NORM > maxH, "SI", "NO")))
+                                                   
+```
+
+
+
+

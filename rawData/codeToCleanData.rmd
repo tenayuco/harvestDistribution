@@ -1,0 +1,74 @@
+---
+title: "R Notebook"
+output: html_notebook
+creator: emiliomora92@gmail.com 
+---
+
+This code changes the rawData_wayPointsCompletos.csv to data suitable to analysis. I explain the different procedures
+
+```{r}
+library("methods")
+library("xml2")
+library(tidyverse)
+```
+```{r}
+WP_COSECHA <- read.csv("./rawData_wayPointsCOMPLETOS.csv", stringsAsFactors = FALSE)
+```
+
+This chunks extract latitude and longitude from "position" column and convert it to decimal values, using common expression
+
+```{r}
+#https://stringr.tidyverse.org/articles/regular-expressions.html
+WP_COSECHA <- WP_COSECHA %>% separate(posicion, c("lat1", "lat2", "long1", "long2"), sep=" ") %>%
+  unite("lon", long1:long2, sep="") %>%
+  unite("lat", lat1:lat2, sep="")
+
+#here we extract the value of long and lat without the N. So it ask for digits until in reaches ? (in this case°)
+# and then it add the values after the ° and divide this by 60 to have it all in degrees. 
+WP_COSECHA$lon <- as.numeric(str_extract(WP_COSECHA$lon, "[:digit:]+?(?=°)"))+ 
+  as.numeric(str_extract(WP_COSECHA$lon, "(?<=°).+?(?=')"))/60 
+
+WP_COSECHA$lat <- as.numeric(str_extract(WP_COSECHA$lat, "[:digit:]+?(?=°)"))+ 
+  as.numeric(str_extract(WP_COSECHA$lat, "(?<=°).+?(?=')"))/60
+```
+
+Here we take the date, we divide it in date and hour, then the hour is transformed to minutes.
+```{r}
+WP_COSECHA$arboles <- 1
+WP_COSECHA<- WP_COSECHA %>% separate(Fecha.de.creación.mod, c("fecha", "hora"), sep = " ")
+WP_COSECHA$Fecha.de.modificación <- NULL
+WP_COSECHA$hora <- as.character(WP_COSECHA$hora)
+WP_COSECHA$hora <- as.numeric(WP_COSECHA$hora)
+WP_COSECHA$tiempo <- (as.integer(WP_COSECHA$hora)*60)+((WP_COSECHA$hora-as.integer(WP_COSECHA$hora))*100) #to have it all in minutes  
+```
+
+
+We create 2 vector to then sustract them and have the delta time- The delta time T2-T1 will be in T1 row. 
+This is helpful to remove the "pause times" because these are defined as T4 (reinitit, tree_X) - T3 (pause, NA) and will be in the (T3, pause, NA, delta_pauseTime) and we will remove that row later (see full explanation in paper)
+```{r}
+
+horaA <-WP_COSECHA$tiempo
+horaB <- horaA
+horaA[length(horaA)+1]<- NA
+horaA<- horaA[2:length(horaA)]  #
+delta<- horaA-horaB
+WP_COSECHA$delta <- delta
+
+WP_COSECHA_sP <- WP_COSECHA %>% filter(!(punto=="NA"))  #
+
+#we remove person, sex and age
+WP_COSECHA_sP <- select(WP_COSECHA_sP, -5, -6, -7)
+
+colnames(WP_COSECHA_sP)[1]<- "ID_REC"
+```
+
+
+Now we have a clean data frame. We use this csv to create, using latlong X_UTM and Y_UTM coordinate values (with any GIS program)
+
+```{r}
+write.csv(WP_COSECHA_sP, "./cleanData_wayPointsCoffee_latlon.csv", row.names = FALSE)
+```
+
+
+
+
