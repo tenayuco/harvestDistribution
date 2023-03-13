@@ -3,7 +3,7 @@ title: "Avances trayectoria"
 output: html_notebook
 ---
 
-This 3rd version has other order than version2.
+Third version in english
 
 ```{r}
 library(ggplot2)
@@ -16,12 +16,12 @@ mycols3b <-c("#1b4a64", "#fdb81c", "#759580")
 ```
 
 
-# I. Arreglo de datos
+# I. Data Arrangment
 
-## I.1. Arreglo Inicial y normalización de coordenadas UTM
+## I.1.Normalization of x, y coordinates
 
 ```{r}
-WP_COSECHA_UTM_SP <- read.csv("~/Desktop/archivosTrabajandose_aborrar/codigos_Cosecha/analisisTrayectorias/Archivo/puntosCafetales_UTM_Tabla.csv", stringsAsFactors = FALSE )
+WP_COSECHA_UTM_SP <- read.csv("../data/cleanData_wayPointsCoffee__UTM.csv", stringsAsFactors = FALSE )
 
 WP_COSECHA_UTM_SP <- WP_COSECHA_UTM_SP %>%
     mutate(finca = replace(finca, finca == "Irlanda", "I")) %>%
@@ -33,8 +33,8 @@ WP_COSECHA_UTM_SP <- WP_COSECHA_UTM_SP %>% rowwise() %>%
   group_by(ID_REC, pante)%>%  #esto debe seguirse con lo de aajo
   mutate(xNorm = x_UTM - min(x_UTM)) %>%
   mutate(yNorm = y_UTM - min(y_UTM))
-
 ```
+
 
 ## I.2. Definicion de vectores entre puntos.
 
@@ -69,52 +69,83 @@ head(WP_COSECHA_UTM_SP)
 
 
 # II. Mapa general y alturas 
-
 ##. II.1. Mapa general
 
 
+IRLANDA PLOTS
 ```{r}
 #con todo el inicio normalizo por algun factor (aqui por ID, y asi grafico)
-
-mapaCosecha_Ir<- WP_COSECHA_UTM_SP %>% 
+mapHarvest_Ir<- WP_COSECHA_UTM_SP %>% 
   rowwise() %>% 
   group_by(ID_REC)%>%  #esto debe seguirse con lo de aajo
   mutate(deltaAc = cumsum(delta))%>%
   filter(finca == "I")%>%
-  #filter(ID_REC == "Ger1")%>%
   unite("ID_REC_pante", ID_REC, pante, sep = "_", remove = FALSE) %>%
   ggplot(aes(x= xNorm, y = yNorm)) +
   geom_path(aes(col= as.numeric(deltaAc)),size=1)+
   geom_point(size=1)+ # es importante que sea path, porque así lo hace según coo estan ordenados los
-  #geom_text(aes(label=arbol.ID),hjust=0, vjust=0)+
   scale_color_viridis_c()+
- # geom_point(aes(col= zona))+
+  facet_wrap(~ID_REC, ncol=3)+
+  theme(panel.spacing = unit(0.8, "lines"), text = element_text(size = 15))+
+  theme_bw()+
+  labs(x= "X_norm", y= "Y_norm", col= "Minutos")
+
+ggsave("../output/mapHarvest_I.png", height = 8, width = 12, device = "png")
+
+
+mapHarvest_Ir_free<- WP_COSECHA_UTM_SP %>% 
+  rowwise() %>% 
+  group_by(ID_REC)%>%  #esto debe seguirse con lo de aajo
+  mutate(deltaAc = cumsum(delta))%>%
+  filter(finca == "I")%>%
+  unite("ID_REC_pante", ID_REC, pante, sep = "_", remove = FALSE) %>%
+  ggplot(aes(x= xNorm, y = yNorm)) +
+  geom_path(aes(col= as.numeric(deltaAc)),size=1)+ # es importante que sea path, porque así lo hace según coo estan ordenados los
+  geom_point(size=1)+ 
+  scale_color_viridis_c()+
   facet_wrap(~ID_REC, ncol=3, scales = "free")+
   theme(panel.spacing = unit(0.8, "lines"), text = element_text(size = 15))+
   theme_bw()+
   labs(x= "X_norm", y= "Y_norm", col= "Minutos")
 
+ggsave("../output/mapHarvest_I_free.png", height =8, width = 12, device = "png")
+```
 
-mapaCosecha_ham<- WP_COSECHA_UTM_SP %>% 
+HAMBURGO PLOTS
+```{r}
+mapHarvest_H<- WP_COSECHA_UTM_SP %>% 
   rowwise() %>% 
   group_by(ID_REC)%>%  #esto debe seguirse con lo de aajo
   mutate(deltaAc = cumsum(delta))%>%
   filter(finca == "H")%>%
-  #filter(ID_REC == "Ger1")%>%
   unite("ID_REC_pante", ID_REC, pante, sep = "_", remove = FALSE) %>%
   ggplot(aes(x= xNorm, y = yNorm)) +
   geom_path(aes(col= as.numeric(deltaAc)),size=1)+
-  geom_point(size=1)+ # es importante que sea path, porque así lo hace según coo estan ordenados los
-  #geom_text(aes(label=arbol.ID),hjust=0, vjust=0)+
+  geom_point(size=1)+ 
   scale_color_viridis_c()+
- # geom_point(aes(col= zona))+
+  facet_wrap(~ID_REC, ncol=3)+
+  theme(panel.spacing = unit(0.8, "lines"), text = element_text(size = 15))+
+  theme_bw()+
+  labs(x= "X_norm", y= "Y_norm", col= "Minutos")
+
+ggsave("../output/mapHarvest_H.png", height =8, width = 12, device = "png")
+
+mapHarvest_H_Free<- WP_COSECHA_UTM_SP %>% 
+  rowwise() %>% 
+  group_by(ID_REC)%>%  #esto debe seguirse con lo de aajo
+  mutate(deltaAc = cumsum(delta))%>%
+  filter(finca == "H")%>%
+  unite("ID_REC_pante", ID_REC, pante, sep = "_", remove = FALSE) %>%
+  ggplot(aes(x= xNorm, y = yNorm)) +
+  geom_path(aes(col= as.numeric(deltaAc)),size=1)+
+  geom_point(size=1)+ 
+  scale_color_viridis_c()+
   facet_wrap(~ID_REC, ncol=3, scales = "free")+
   theme(panel.spacing = unit(0.8, "lines"), text = element_text(size = 15))+
   theme_bw()+
   labs(x= "X_norm", y= "Y_norm", col= "Minutos")
 
-mapaCosecha_ham
-mapaCosecha_Ir
+ggsave("../output/mapHarvest_H_free.png", height =8, width = 12, device = "png")
 ```
 
 

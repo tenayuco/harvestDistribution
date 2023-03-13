@@ -58,6 +58,8 @@ WP_COSECHA_sP <- WP_COSECHA %>% filter(!(punto=="NA"))  #
 
 #we remove person, sex and age
 WP_COSECHA_sP <- select(WP_COSECHA_sP, -5, -6, -7)
+WP_COSECHA_sP$zona[WP_COSECHA_sP$zona == "falta"] <- "zonaBaja"
+
 
 colnames(WP_COSECHA_sP)[1]<- "ID_REC"
 ```
