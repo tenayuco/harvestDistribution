@@ -14,6 +14,8 @@ library(adehabitatLT)
 mycols <- c("#021128","#1b4a64", "#3585a0", "#759580", "#c78f34", "#fd9706","#fdb81c","#fbdb30")
 mycols3a <-c("#021128", "#fd9706", "#3585a0")
 mycols3b <-c("#1b4a64", "#fdb81c", "#759580")
+mycols3c <-c("#759580", "#1b4a64")
+
 ```
 
 
@@ -78,6 +80,39 @@ head(WP_COSECHA_UTM_SP)
 
 # II. Mapa general y alturas 
 ##. II.1. Mapa general
+
+```{r}
+mapHarvest<- WP_COSECHA_UTM_SP %>% 
+  filter(ID_REC == "Ger2" | ID_REC == "Ger1" |ID_REC == "Fran6" | ID_REC == "Fran7" ) %>% 
+  mutate(finca = (ifelse(finca == "I", " Finca Irlanda", finca)))%>% 
+    mutate(finca = (ifelse(finca == "H", " Finca Hamburgo", finca)))%>% 
+  rowwise() %>% 
+  group_by(ID_REC)%>%  #esto debe seguirse con lo de aajo
+  mutate(deltaAc = cumsum(delta))%>%
+  #filter(finca == "I")%>%
+  unite("ID_REC_pante", ID_REC, pante, sep = "_", remove = FALSE) %>%
+  ggplot(aes(x= xNorm, y = yNorm)) +
+  geom_path(aes(col= finca), linewidth=1.5)+
+  geom_point(size=1.5)+ # es importante que sea path, porque así lo hace según coo estan ordenados los
+  scale_color_manual(values = mycols3c)+
+  facet_wrap(finca~ID_REC, nrow = 2)+
+  theme(panel.spacing = unit(0.8, "lines"), text = element_text(size = 20))+
+  theme_bw()+
+  xlim(0, 100)+
+  ylim(0,100)+
+  theme(
+    strip.background = element_blank(),
+    strip.text.x = element_blank()
+  )+ 
+  labs(x= "X", y= "Y", col= "Finca")
+
+ggsave("../output/mapHarvest.png", height = 10, width = 12, device = "png")
+
+#ggsave("../output/mapHarvest.png", height = 8, width = 18, device = "png")
+
+```
+
+
 
 IRLANDA PLOTS
 ```{r}
@@ -187,8 +222,8 @@ a proxy for velocity
 First we convert the dataFrame to an adehabitatLT object (calculaing the norm and angles before was redundant)
 
 ```{r}
-WP_COSECHA_UTM_SP <-  WP_COSECHA_UTM_SP %>% unite("F_ID_REC", finca, ID_REC, sep ="_", remove=TRUE) #each combination will be a "burst"
-WP_COSECHA_CORTO <- WP_COSECHA_UTM_SP %>% 
+WP_COSECHA_UTM_SP2 <-  WP_COSECHA_UTM_SP %>% unite("F_ID_REC", finca, ID_REC, sep ="_", remove=TRUE)  #AQUI PUEDE sER UN PREDP #each combination will be a "burst"
+WP_COSECHA_CORTO <- WP_COSECHA_UTM_SP2 %>% 
   dplyr:: select(F_ID_REC, proceso, xNorm, yNorm, Fecha.de.creación)  # we select only these columns beacuse that is in the input for adehabitat
 names(WP_COSECHA_CORTO) <- c("pante", "F_ID_REC", "process", "x", "y", "date")
 
@@ -281,7 +316,28 @@ ggsave("../output/rel_angle_deg_reg.png", height = 8, width = 12, device = "png"
 
 
 
+```{r}
 
+WP_COSECHA_UTM_SP$DIF_ANGLE_CHANGE_DEG <- WP_COSECHA_UTM_SP$DIF_ANGLE_CHANGE*(360/(2*pi))
+
+polarAngle_rel <-WP_COSECHA_UTM_SP %>%
+  #filter((rel.angle.deg<0 | rel.angle.deg>10))%>%
+  #separate(col=F_ID_REC, into=c("FINCA", "ID_PANTE"), sep="_", remove = FALSE) %>%
+  ggplot(aes(x = DIF_ANGLE_CHANGE_DEG, fill = F_ID_REC)) +
+  geom_histogram(binwidth = 20, boundary = 0) +
+  scale_fill_viridis_d()+
+  #scale_fill_manual(values=mycols)+
+  coord_polar(theta="x", start=pi/2, direction=-1)+
+    scale_x_continuous(breaks=seq(-180,180,30),
+                            limits=c(-180,180))+
+  facet_wrap(~finca, ncol = 2)+
+   theme(panel.spacing = unit(0.8, "lines"), text = element_text(size = 15))+
+  theme_bw()+ 
+   labs(fill= "FINCA")
+
+ggsave("../output/rel_angle_deg_reg_emilio.png", height = 8, width = 12, device = "png")
+
+```
 
 
 
