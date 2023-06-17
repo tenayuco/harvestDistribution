@@ -83,9 +83,9 @@ head(WP_COSECHA_UTM_SP)
 
 ```{r}
 mapHarvest<- WP_COSECHA_UTM_SP %>% 
-  filter(ID_REC == "Ger2" | ID_REC == "Ger1" |ID_REC == "Fran6" | ID_REC == "Fran7" ) %>% 
+  filter(ID_REC == "Ger2" | ID_REC == "Ger1" |ID_REC == "Fran5" | ID_REC == "Fran7" ) %>% 
   mutate(finca = (ifelse(finca == "I", " Finca Irlanda", finca)))%>% 
-    mutate(finca = (ifelse(finca == "H", " Finca Hamburgo", finca)))%>% 
+    mutate(finca = (ifelse(finca == "H", "Finca Hamburgo", finca)))%>% 
   rowwise() %>% 
   group_by(ID_REC)%>%  #esto debe seguirse con lo de aajo
   mutate(deltaAc = cumsum(delta))%>%
@@ -104,9 +104,11 @@ mapHarvest<- WP_COSECHA_UTM_SP %>%
     strip.background = element_blank(),
     strip.text.x = element_blank()
   )+ 
+    theme(text = element_text(size = 20))+
+  theme(legend.position = "none")+ 
   labs(x= "X", y= "Y", col= "Finca")
 
-ggsave("../output/mapHarvest.png", height = 10, width = 12, device = "png")
+ggsave("../output/mapHarvest.png", height = 10, width = 10, device = "png")
 
 #ggsave("../output/mapHarvest.png", height = 8, width = 18, device = "png")
 
