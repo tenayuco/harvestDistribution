@@ -34,12 +34,14 @@ WP_COSECHA_UTM_SP$xNorm <- round(WP_COSECHA_UTM_SP$xNorm, 0)
 WP_COSECHA_UTM_SP$yNorm <- round(WP_COSECHA_UTM_SP$yNorm, 0)
 
 WP_COSECHA_UTM_SP <- WP_COSECHA_UTM_SP %>%
-  filter(delta !=0)
+  filter(delta !=0)%>%
+  unite("Finca_ID_REC", finca, ID_REC, remove = FALSE)
 
-WP_COSECHA_UTM_SP <- WP_COSECHA_UTM_SP %>%
-  dplyr::select("ID" = ID_REC, xNorm, yNorm)
+WP_COSECHA_UTM_SP_PRE <- WP_COSECHA_UTM_SP %>%
+  dplyr::select("ID" = Finca_ID_REC, xNorm, yNorm)
 
-WP_COSECHA_UTM_SP$pante <- NULL
+WP_COSECHA_UTM_SP_PRE$pante <- NULL
+WP_COSECHA_UTM_SP_PRE$ID_REC <- NULL
 
 ############
 ##2. Now we prepare the data for hmm. Importantly we will only use the irregular data (time
@@ -48,7 +50,7 @@ WP_COSECHA_UTM_SP$pante <- NULL
 
 #########################IRREGULAR VEAMOS
 
-dataCosecha <- prepData(WP_COSECHA_UTM_SP, type= "UTM", coordNames = c("xNorm", "yNorm"))
+dataCosecha <- prepData(WP_COSECHA_UTM_SP_PRE, type= "UTM", coordNames = c("xNorm", "yNorm"))
 
 dataCosecha <- dataCosecha %>% 
   filter(step!= 0)  #we remove the zeros
@@ -56,10 +58,10 @@ dataCosecha <- dataCosecha %>%
 summary(dataCosecha)
 
 
+
 plot(dataCosecha)
 
 ################
-#viene el loop para ver cuál de todas las combinaciones de dos estados es las que arroja los mejores intervalos de confianza
 
 ## initial parameters 
 mu0 <- c(1,5) # step mean (two parameters: one for each state)
@@ -83,22 +85,116 @@ CI_cosecha<- CI(m_cosecha)
 
 
 
+
+
+
+
+#########ahora probamos con Weibull############3
+
+shap1 <- c(1,5)
+scal1 <- c(5, 10)
+stepPar1 <- c(shap1,scal1)
+
+#https://statisticsbyjim.com/probability/weibull-distribution/
+
+m_weibull<- fitHMM(data = dataCosecha, stepDist = "weibull", nbStates = 2 , stepPar0 = stepPar1, anglePar0 = anglePar0)
+
+
+
+############ ahora intentamos lognormal
+#https://towardsdatascience.com/log-normal-distribution-a-simple-explanation-7605864fb67c
+
+loc2 <- c(1, 2)
+sig2 <- c(0.5, 1)
+
+stepPar2 <- c(loc2,sig2)
+
+
+#https://statisticsbyjim.com/probability/weibull-distribution/
+
+m_logNorm<- fitHMM(data = dataCosecha, stepDist = "lnorm", nbStates = 2 , stepPar0 = stepPar1, anglePar0 = anglePar0)
+
+AIC(m_cosecha, m_weibull, m_logNorm,  m3)
+
+#por ejemplo, si probabamos uno de 3 
+
+mu0 <- c(1, 5, 10)
+sigma0 <- c(1,1,1)
+stepPar0 <- c(mu0,sigma0)
+angleMean0 <- c(0,0,0)
+kappa0 <- c(1,1,1)
+anglePar0 <- c(angleMean0,kappa0)
+# fit the 3-state model
+m3 <- fitHMM(data=dataCosecha,nbStates=3,stepPar0=stepPar0,
+             anglePar0=anglePar0)
+
+
+##########criterio de akaike
+AIC(m_cosecha,m3)
+
+
+
+
+
+
 #viene el loop para ver cuál de todas las combinaciones de dos estados es las que arroja los mejores intervalos de confianza
 
 
+
+
+
+
+
+#### ESTO ES POST ANALISIS
+
+
 states <- viterbi(m_cosecha)
+
+dataCosecha$states <- states
 #probabilidad de estar en un estado o en el otro. 
 #PERO FATLA hacerlo por FINCA. Y esto es lo que sepuede publicar DAI!
 
-tableStates <- table(states)/length(states)
+dataCosecha <- dataCosecha %>%
+  separate(ID, into= c("finca", "ID_REC"), sep = "_")
+
+##########
+
+H_dataCosecha <- dataCosecha %>%
+  filter(finca== "H")
+I_dataCosecha <- dataCosecha %>%
+  filter(finca== "I")
+
+H_tableStates <- table(H_dataCosecha$states)/length(H_dataCosecha$states)
+I_tableStates <- table(I_dataCosecha$states)/length(I_dataCosecha$states)
 
 
 plotStates(m_cosecha)
 
 
-#hacer criterio de AKAIKE
+########pruebas a ver de donde salen los promedios#########3
+
+dataCosecha_1 <- dataCosecha %>% 
+  filter(states==1)
+
+mean(dataCosecha_1$step, na.rm = TRUE)
+mean(dataCosecha_1$step, na.rm = TRUE)
+
+
+
+
+
+#hacer criterio de AKAIKE  VAMOS A DARLE A ESTO
+
 
 ## initial parameters 
+
+
+
+
+
+
+
+
 
 ######33
 
