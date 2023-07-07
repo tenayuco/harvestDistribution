@@ -57,24 +57,85 @@ dataCosecha <- dataCosecha %>%
 
 summary(dataCosecha)
 
-
+anglesFalse <- runif(dim(dataCosecha)[1], -pi, pi)
+dataCosecha$angle <- anglesFalse
 
 plot(dataCosecha)
 
 ################
 
 ## initial parameters 
+#angles parameters, that are not relevant for the analysis 
+angleMean0 <- c(0,0) # angle mean
+kappa0 <- c(1,1) # angle concentration
+anglePar0 <- c(angleMean0,kappa0)
+
+#######MEGA LOOP##############
+###Minimizing the Negative Log-Likelihood
+
+#Finally, because the logarithmic function is monotonic, 
+#maximizing the likelihood is the same as maximizing the log 
+#of the likelihood (i.e., log-likelihood). Just to make things 
+#a little more complicated since “minimizing loss” makes more sense, 
+#we can instead take the negative of the log-likelihood and minimize that, 
+#resulting in the well known Negative Log-Likelihood Loss:
+
+
+
+rangosDist <- list("gamma" = list("mean" = c(0, 10), "sd" = c(0,10)), 
+                   "weibull" = list("shape" = c(0, 10), "scale" = c(0,10)), 
+                   "lnorm" =  list("location" = c(-10, 10), "scale" = c(0,10)))
+
+DF_TOTAL <- data.frame("model"= 0, "stepPar0"= 0, "minNegLike" = 0,  
+                    "par0_st1"= 0, "par1_st1"= 0 , 
+                    "par0_st2"= 0, "par1_st1"= 0 )
+
+
+for (modelStep in c("gamma", "lnorm")){
+  repetitions <- seq(1, 2,1)
+  print(modelStep)
+  rangePar0 <- runif(length(repetitions), rangosDist[[modelStep]][[1]][1], rangosDist[[modelStep]][[1]][2])
+  rangePar1 <- runif(length(repetitions), rangosDist[[modelStep]][[2]][1], rangosDist[[modelStep]][[2]][2])
+  for (rep in repetitions){
+    par0 <- c(sample(rangePar0,1, replace= TRUE),sample(rangePar0,1, replace= TRUE)) # step mean (two parameters: one for each state)
+    par1 <- c(sample(rangePar1,1, replace= TRUE), sample(rangePar0,1, replace= TRUE)) 
+    print(par0)
+    print(par1)
+    stepPar <- c(par0,par1)
+  #op1
+    m_cosecha<- fitHMM(data = dataCosecha, stepDist = modelStep,  nbStates = 2 , stepPar0 = stepPar0, anglePar0 =anglePar0)
+    minNegLike <- - m_cosecha$mod$minimum
+    DF_TEMP <- data.frame("model"= modelStep, "stepPar0"= paste(as.character(par0), as.character(par1) ),"minNegLike" = minNegLike,
+                        "par0_st1"= m_cosecha$mle$stepPar[1,1], "par1_st1"= m_cosecha$mle$stepPar[2,1] , 
+                        "par0_st2"=m_cosecha$mle$stepPar[1,2], "par1_st1"= m_cosecha$mle$stepPar[2,2] )
+    DF_TOTAL <- rbind(DF_TOTAL, DF_TEMP)    
+    
+    
+      }
+}
+
+m_cosecha$mod$minimum
+
+################## LOOPS
+
 mu0 <- c(1,5) # step mean (two parameters: one for each state)
 sigma0 <- c(1,1) # step SD priors
 #zeromass0 <- c(0.1,0.05) # step zero-mass  #este solo si tengo ceros
 #stepPar0 <- c(mu0,sigma0,zeromass0)
 stepPar0 <- c(mu0,sigma0)
 
-angleMean0 <- c(0,0) # angle mean
-kappa0 <- c(1,1) # angle concentration
-anglePar0 <- c(angleMean0,kappa0)
 
-m_cosecha<- fitHMM(data = dataCosecha, nbStates = 2 , stepPar0 = stepPar0, anglePar0 = anglePar0)
+#op1
+m_cosecha_an<- fitHMM(data = dataCosecha, nbStates = 2 , stepPar0 = stepPar0, anglePar0 =anglePar0)
+
+
+
+########33
+li = list('java','python')
+li2 <- append(li,'r',after=1)
+
+str(m_cosecha_an$mle)
+
 
 DF_meanSD <- as.data.frame(m_cosecha$mle$stepPar)
 
