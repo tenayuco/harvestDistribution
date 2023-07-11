@@ -13,6 +13,8 @@ library(dplyr)
 library(tidyverse)
 library(moveHMM)
 colorsGris <- c("black","#555555", "white")
+groupColors3 <- c("#021128", "#fd9706", "#1b4a64" )
+
 ```
 
 
@@ -87,8 +89,9 @@ DF_TOTAL <- data.frame("model"= 0,
 
 ###loop to explore  multiple combinations of parameters
 
-repetitions <- seq(1, 100,1)
-
+repetitions <- seq(1, 1000,1)
+runModel <- "no"
+if (runModel == "yes"){
 for (modelStep in c("weibull", "gamma", "lnorm")){
   print(modelStep)
   rangePar0 <- runif(100000, rangosDist[[modelStep]][[1]][1], rangosDist[[modelStep]][[1]][2])
@@ -137,44 +140,135 @@ for (modelStep in c("weibull", "gamma", "lnorm")){
 
 DF_TOTAL <- DF_TOTAL%>%
   filter(model != 0)
-
-#write_csv(DF_TOTAL, "../output/wholeTable_100_rep_0_20.csv")
+}
+#write_csv(DF_TOTAL, "../output/wholeTable_1000_rep_0_20.csv")
 ```
 
 Now from that total, we explore the different AIC values
 
 ```{r}
-FIG_AIC_model <- DF_TOTAL %>% 
+DF_TOTAL_1000 <- read.csv("../output/wholeTable_1000_rep_0_20.csv")
+DF_TOTAL_1000 <- DF_TOTAL_1000 %>%
+  separate(prior_par0_st1_st2, c("prior_par0_st1", "prior_par0_st2"), sep= "_", remove = TRUE) %>%
+  separate(prior_par1_st1_st2, c("prior_par1_st1", "prior_par1_st2"), sep= "_", remove = TRUE)
+
+
+
+FIG_AIC_model <- DF_TOTAL_1000 %>% 
   filter(AIC_model != "Inf")%>% 
   ggplot(aes(x= model, y= AIC_model))+
-  geom_boxplot(aes(fill= model))+
-  geom_jitter(aes(x= model, y= AIC_model), col= "darkred")+
-  scale_fill_manual(values = colorsGris) +
+  geom_jitter(aes(x= model, y= AIC_model, shape= model, fill= model), size= 4)+
+  #scale_fill_manual(values = colorsGris) +
+  scale_fill_manual(values = groupColors3) +
+  scale_shape_manual(values = c(21, 24, 22))+
   theme_bw()
 
 FIG_AIC_model
 ```
 
 
+From this we can see that for some specific values of prior parameters, the AIC reaches some minimal values, for each model
 
+```{r}
+DF_1000_OUTLIERS <- DF_TOTAL_1000 %>%
+  filter(AIC_model <=4500)
+DF_1000_OUTLIERS[,c(6,7,8,9)] <- round(DF_1000_OUTLIERS[,c(6,7,8,9)], 3)
+
+
+```
+We can see that for gamma distribution, all the outliers (with minimum AIC)
+suggest two equivalent states
+
+gamma
+state 1: gamma(location: [4-9], shape [3-7]). This is a state that will characterize almost all steps. 
+state 2: gamma(location: [2], shape [0])- A state that only considers the 2 m steps, with no variance. 
+
+lnorm
+state 1: lnorm([1.498-1.6], shape: 0). Astate that ony considers
+state 2 lnorm ([1.4], [0.6])
+
+We show now the representations of both of theses distrributions (we choose 2 lines randomly with the same priors)
 
 ```{r}
 
-DF_TOTAL_U <- DF_TOTAL%>%
-  group_by(model)%>%
-  filter(AIC_model == min(AIC_model))
+DF_1000_OUTLIERS<- DF_1000_OUTLIERS %>%
+  mutate(contador = 1)%>%
+  group_by(model) %>%
+  mutate(countModel = cumsum(contador))
 
-write_csv(DF_TOTAL_U, "../output/minAIC_Table_100_rep_0_20.csv")
+OUTLIERS_EX <- DF_1000_OUTLIERS %>%
+  filter(countModel == 1)
 
+modelos_OUTLIERS <- list("gamma" = 0, 
+     "gamma" = 0,  ##segun el articulo
+     "lnorm" =  0)
 
-DF_TOTAL_U_sinOut <- DF_TOTAL%>%
-  group_by(model)%>%
-  filter(AIC_model >4000)%>% 
-  filter(AIC_model == min(AIC_model))
+for (i in seq(1, dim(OUTLIERS_EX)[1],1)){
+  par0_p <- as.numeric(c(OUTLIERS_EX$prior_par0_st1[i], OUTLIERS_EX$prior_par0_st2[i]))
+  par1_p <- as.numeric(c(OUTLIERS_EX$prior_par1_st1[i], OUTLIERS_EX$prior_par1_st2[i]))
+  stepPar0_p <- c(par0_p, par1_p)
+  print(stepPar0_p)
+  #op1
+  m_cosecha_OUT<- fitHMM(data = dataCosecha, nbStates = 2 , stepPar0 = stepPar0_p, angleDist = "none", stepDist = as.character(OUTLIERS_EX$model[i]))
+  modelos_OUTLIERS[[as.character(OUTLIERS_EX$model[i])]] <- m_cosecha_OUT 
+}
 
-write_csv(DF_TOTAL_U_sinOut, "../output/minAIC_sinOut__Table_100_rep_0_20.csv")
 
 ```
+```{r}
+plot(modelos_OUTLIERS$gamma, animals = c("I_Car12", "I_MigSam4", "H_Fran6", "H_Fran9"), ask = FALSE, plotTracks = TRUE)
+```
+
+
+```{r}
+plot(modelos_OUTLIERS$lnorm, animals = c("I_Car12", "I_MigSam4", "H_Fran6", "H_Fran9"), ask = FALSE, plotTracks = TRUE)
+```
+
+As we can see, it only separates the model when the variance is null for one distribtuon, this does not make any biological sense. 
+
+So now, we are going to plot the exmples without these outliers, and plot the mininum AIC
+
+```{r}
+DF_TOTAL_MIN <- DF_TOTAL_1000 %>%
+  filter(AIC_model > 4500)%>%
+  group_by(model)%>%
+  filter(AIC_model == min(AIC_model))
+```
+
+```{r}
+
+
+modelos_p <- list("gamma" = 0, 
+     "weibull" = 0,  ##segun el articulo
+     "lnorm" =  0)
+
+for (i in seq(1,dim(DF_TOTAL_MIN)[1],1)){
+  par0_p <- as.numeric(c(DF_TOTAL_MIN$prior_par0_st1[i], DF_TOTAL_MIN$prior_par0_st2[i]))
+  par1_p <- as.numeric(c(DF_TOTAL_MIN$prior_par1_st1[i], DF_TOTAL_MIN$prior_par1_st2[i]))
+  stepPar0_p <- c(par0_p, par1_p)
+  print(stepPar0_p)
+  #op1
+  m_cosecha_p<- fitHMM(data = dataCosecha, nbStates = 2 , stepPar0 = stepPar0_p, angleDist = "none", stepDist = as.character(DF_TOTAL_MIN$model[i]))
+  modelos_p[[as.character(DF_TOTAL_MIN$model[i])]] <- m_cosecha_p 
+}
+
+
+```
+
+
+```{r}
+plot(modelos_p$gamma, animals = c("I_Car12", "I_MigSam4", "H_Fran6", "H_Fran9"), ask = FALSE, plotTracks = TRUE)
+```
+
+```{r}
+plot(modelos_p$lnorm, animals = c("I_Car12", "I_MigSam4", "H_Fran6", "H_Fran9"), ask = FALSE, plotTracks = TRUE)
+```
+```{r}
+plot(modelos_p$weibull, animals = c("I_Car12", "I_MigSam4", "H_Fran6", "H_Fran9"), ask = FALSE, plotTracks = TRUE)
+```
+
+
+
 
 ```{r}
 FIG_AIC_model <- DF_TOTAL %>% 
@@ -185,7 +279,7 @@ FIG_AIC_model <- DF_TOTAL %>%
   scale_fill_manual(values = colorsGris) +
   theme_bw()
 
-ggsave(FIG_AIC_model,filename=paste("../output/", "FIG_AIC_MODEL_100", ".png", sep=""),  height = 5, width = 16) # ID will be the unique identifier. and change the extension from .png to whatever you like (eps, pdf etc)
+#ggsave(FIG_AIC_model,filename=paste("../output/", "FIG_AIC_MODEL_100", ".png", sep=""),  height = 5, width = 16) # ID will be the unique identifier. and change the extension from .png to whatever you like (eps, pdf etc)
 
 FIG_AIC_model_sinOut <- DF_TOTAL %>% 
   filter(AIC_model != "Inf")%>% 
@@ -196,7 +290,7 @@ FIG_AIC_model_sinOut <- DF_TOTAL %>%
   scale_fill_manual(values = colorsGris)+
   theme_bw()
 
-ggsave(FIG_AIC_model_sinOut,filename=paste("../output/", "FIG_AIC_100_SINOUT_MODEL", ".png", sep=""),  height = 5, width = 16) # ID will be the unique identifier. and change the extension from .png to whatever you like (eps, pdf etc)
+#ggsave(FIG_AIC_model_sinOut,filename=paste("../output/", "FIG_AIC_100_SINOUT_MODEL", ".png", sep=""),  height = 5, width = 16) # ID will be the unique identifier. and change the extension from .png to whatever you like (eps, pdf etc)
 
 ```
 
