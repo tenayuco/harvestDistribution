@@ -1,25 +1,28 @@
 ---
-title: "R Notebook"
-output: html_notebook
+title: "Insights on the movement of harvesters using HMM"
+output:
+  html_document:
+    df_print: paged
+  html_notebook: default
+  pdf_document: default
 ---
 
-#Analisis de las trayectorias usando HMM (Hidden Markov Chains)
+## I. Preparation of data   
 
-
-```{r}
+We load ggplot2, dplyr, tidyverse and movehmm libraries used during the analysis. 
+```{r, message=FALSE, echo=FALSE}
 library(ggplot2)
-library(viridis)
 library(dplyr)
 library(tidyverse)
 library(moveHMM)
 colorsGris <- c("black","#555555", "white")
 groupColors3 <- c("#021128", "#fd9706", "#1b4a64" )
-
+groupColors2 <- c("#021128", "#fd9706")
 ```
 
+We then load the data of the trajectories and do some punctual modifications on it:
 
-I. We load the data from the trajectories and do some punctual modifications
-```{r}
+```{r, echo=FALSE, message=FALSE}
 WP_COSECHA_UTM_SP <- read.csv("../data/cleanData_wayPointsCoffee_UTM.csv", stringsAsFactors = FALSE )
 
 WP_COSECHA_UTM_SP <- WP_COSECHA_UTM_SP %>%
@@ -27,7 +30,6 @@ WP_COSECHA_UTM_SP <- WP_COSECHA_UTM_SP %>%
   mutate(finca = replace(finca, finca == "Hamburgo", "H"))
 
 WP_COSECHA_UTM_SP$zona[WP_COSECHA_UTM_SP$zona == "falta"] <- "zonaBaja"
-
 WP_COSECHA_UTM_SP <- WP_COSECHA_UTM_SP %>% rowwise() %>% 
   group_by(ID_REC, pante)%>%  #esto debe seguirse con lo de aajo
   mutate(xNorm = x_UTM - min(x_UTM)) %>%
@@ -50,32 +52,63 @@ WP_COSECHA_UTM_SP_PRE <- WP_COSECHA_UTM_SP %>%
 
 WP_COSECHA_UTM_SP_PRE$pante <- NULL
 WP_COSECHA_UTM_SP_PRE$ID_REC <- NULL
-
+```
+```{r}
 head(WP_COSECHA_UTM_SP_PRE)
 ```
 
-We create the data for movehmm
-```{r}
+We convert it to a movehmm object:
+```{r, echo=FALSE}
 dataCosecha <- prepData(WP_COSECHA_UTM_SP_PRE, type= "UTM", coordNames = c("xNorm", "yNorm"))
 
 #we remove the steps equal to zero (when the worker harvest 2 trees separated by less than a meter..)
 dataCosecha <- dataCosecha %>% 
   filter(step!= 0)  #we remove the zeros
-
 summary(dataCosecha)
-#anglesFalse <- runif(dim(dataCosecha)[1], -pi, pi)
-#dataCosecha$angle <- anglesFalse
+```
 
+```{r}
 head(dataCosecha)
 ```
 
-We are going to keep the irregular trayectory, and only use the step-length. (to only register the big displacements, independently of the time)
+Now, we are going to keep the time-irregular trajectory and treat as a regular trajectory. This implies that we can't assume velocity of the workers. Nonetheless, this analysis helps us to see the pattern of workers across the trees and differentiate short and large steps between trees, during harvesting. Also we will only use, to simplify, the steplength to caracterize the movement.
 
 ```{r}
-rangosDist <- list("gamma" = list("mean" = c(0.1, 15), "sd" = c(0.1,15)), 
+hist(dataCosecha$step, breaks = 100)
+```
+
+## II. Movehmm analysis
+
+The library movehmm uses a Hidden Markov Model (HMM) to characterize states (the HMM) that belong to a specific distribution (gamma, weibull or lnorm) using "emissions" of the states (aka the steps lengths) and calculating, using a likelihood function, both the transitions probabilities between the states and the probabilties of each step of belonging to each of the states. 
+
+The algoritm uses: 
+
+- a predefined distribution with prior parameters (guesses)
+
+- a dataset of step lengths
+
+- a predefined number of states
+
+#### a) Priors parameters
+Here we first explore (using **), the ranges of each of the parameters for each distributions. We are going to run 1000 combinations between each of the ranges, for each of the models.  
+
+```{r, echo=FALSE}
+rangosDist <- list("gamma" = list("mean" = c(0.1, 20), "sd" = c(0.1,20)), 
                    "weibull" = list("shape" = c(0, 2.7), "scale" = c(0.1,15)),  ##segun el articulo
                    "lnorm" =  list("location" = c(-1, 20), "scale" = c(0.001,3)))
 
+DF_rangos <- data.frame("value" = c("min", "max"))
+DF_rangos <- cbind(DF_rangos, as.data.frame(rangosDist))
+DF_rangos
+```
+
+These limits were adjusted looking at the general distribution of the steps lengths (see previous figure). For the gamma mean and sd, we check the maximum possible values to include the 120 meters steps. For the weibull, the maximum shape was considering the left-skew and the scale was consider to include the 120 m steps. For lnorm, the location was varied to mimic **, and the scale was varied accordingly to include all the steps. It is important to note that these are only priors guesses, and the real parameters can outbound these limits. The utility of sweeping these priors is to avoid local likelihood maximums (or negative likelihoods minimums). 
+
+#### b) States, models and whole loop
+
+After this decision, we predefined 2 states and load the database. We ran the models for 1000 combinations of priors, 3 distributions for the step lengths (gamma, lnorm and weibull). For each model we register the minimun likelihood and the minimum AIC (both values should be equivalent, since all the models have the same number of parameters). 
+
+```{r, echo=FALSE}
 DF_TOTAL <- data.frame("model"= 0, 
             "prior_par0_st1_st2"= 0,
             "prior_par1_st1_st2" = 0,
@@ -85,9 +118,6 @@ DF_TOTAL <- data.frame("model"= 0,
            "st1_par1"=0,
            "st2_par0"=0,
            "st2_par1"= 0)
-
-
-###loop to explore  multiple combinations of parameters
 
 repetitions <- seq(1, 1000,1)
 runModel <- "no"
@@ -144,14 +174,18 @@ DF_TOTAL <- DF_TOTAL%>%
 #write_csv(DF_TOTAL, "../output/wholeTable_1000_rep_0_20.csv")
 ```
 
-Now from that total, we explore the different AIC values
+We plot the different AIC values for all the models and combinations of parameters: 
 
-```{r}
+```{r, echo=FALSE}
 DF_TOTAL_1000 <- read.csv("../output/wholeTable_1000_rep_0_20.csv")
 DF_TOTAL_1000 <- DF_TOTAL_1000 %>%
   separate(prior_par0_st1_st2, c("prior_par0_st1", "prior_par0_st2"), sep= "_", remove = TRUE) %>%
   separate(prior_par1_st1_st2, c("prior_par1_st1", "prior_par1_st2"), sep= "_", remove = TRUE)
 
+DF_TOTAL_1000$prior_par0_st1 <- as.numeric(DF_TOTAL_1000$prior_par0_st1)
+DF_TOTAL_1000$prior_par1_st1 <- as.numeric(DF_TOTAL_1000$prior_par1_st1)
+DF_TOTAL_1000$prior_par0_st2 <- as.numeric(DF_TOTAL_1000$prior_par0_st2)
+DF_TOTAL_1000$prior_par1_st2 <- as.numeric(DF_TOTAL_1000$prior_par1_st2)
 
 
 FIG_AIC_model <- DF_TOTAL_1000 %>% 
@@ -166,30 +200,34 @@ FIG_AIC_model <- DF_TOTAL_1000 %>%
 FIG_AIC_model
 ```
 
+From this figure we note that in every model, almost all model generate 1 or 2 AIC values, but in the case of the gamma and lnorm distributions we can see some specific outliers that have minimal AIC values (less than 4500). Before taking these models for granted we decided to explore its resulting parameters and biological meaning. 
 
-From this we can see that for some specific values of prior parameters, the AIC reaches some minimal values, for each model
+We filter the priors and resulting parameters for these outliers: 
 
-```{r}
+```{r, echo=FALSE}
 DF_1000_OUTLIERS <- DF_TOTAL_1000 %>%
   filter(AIC_model <=4500)
-DF_1000_OUTLIERS[,c(6,7,8,9)] <- round(DF_1000_OUTLIERS[,c(6,7,8,9)], 3)
+DF_1000_OUTLIERS[,seq(2,11,1)] <- round(DF_1000_OUTLIERS[,seq(2,11,1)], 2)
 
-
+DF_1000_OUTLIERS
 ```
-We can see that for gamma distribution, all the outliers (with minimum AIC)
-suggest two equivalent states
 
-gamma
-state 1: gamma(location: [4-9], shape [3-7]). This is a state that will characterize almost all steps. 
-state 2: gamma(location: [2], shape [0])- A state that only considers the 2 m steps, with no variance. 
+If we focus on the generated states (st1_par0, st1_par1, st2_par0 and st2_par1) we note that:
 
-lnorm
-state 1: lnorm([1.498-1.6], shape: 0). Astate that ony considers
-state 2 lnorm ([1.4], [0.6])
+- for the gamma distributions, all the models suggest almost the same parameters for both states**invert states
 
-We show now the representations of both of theses distrributions (we choose 2 lines randomly with the same priors)
+- State 1.gamma(mean [5-9.22], sd[3.25-8.81]). This is a state that will characterize almost all steps. 
 
-```{r}
+- state 2: gamma(mean[2-4], sd[0])- A state that only considers the 2 to 4 m steps, with no variance. 
+
+- For the lnorm distribution, the two states are equivalent
+
+state 2 lnorm (location[1.37-1.43], shape[0.66])-a state that **
+- state 1: lnorm([1.5-1.6], shape:0). 
+
+If we observe (using the viterbi algoritm) how these model divide the trajectories:
+
+```{r, echo=FALSE}
 
 DF_1000_OUTLIERS<- DF_1000_OUTLIERS %>%
   mutate(contador = 1)%>%
@@ -213,20 +251,38 @@ for (i in seq(1, dim(OUTLIERS_EX)[1],1)){
   modelos_OUTLIERS[[as.character(OUTLIERS_EX$model[i])]] <- m_cosecha_OUT 
 }
 
+print("dei")
 
 ```
-```{r}
-plot(modelos_OUTLIERS$gamma, animals = c("I_Car12", "I_MigSam4", "H_Fran6", "H_Fran9"), ask = FALSE, plotTracks = TRUE)
+
+For the gamma distribution (we show an example with 2 trajectories)
+```{r, fig.show='hold', out.width="50%", echo= FALSE}
+plot(modelos_OUTLIERS$gamma, animals = c("I_Car12", "H_Fran9"), ask = FALSE, plotTracks = TRUE, breaks = 100, col = groupColors2, lwd=3.0)
 ```
 
-
-```{r}
-plot(modelos_OUTLIERS$lnorm, animals = c("I_Car12", "I_MigSam4", "H_Fran6", "H_Fran9"), ask = FALSE, plotTracks = TRUE)
+For the lnorm distribution (we show an example with 2 trajectories)
+```{r, fig.show='hold', out.width="50%", echo=FALSE}
+plot(modelos_OUTLIERS$lnorm, animals = c("I_Car12", "H_Fran9"), ask = FALSE, plotTracks = TRUE, breaks = 100, col = groupColors2, lwd=3.0)
 ```
 
-As we can see, it only separates the model when the variance is null for one distribtuon, this does not make any biological sense. 
+As we can see, the algorithm considers one state for the really small steps  (<4 m) and other state for all the other step lengths. This is interesting but it doe not makes sense to assume on distribution without any variance. In this sense, we assume that it makes sense to remove these outliers. 
 
-So now, we are going to plot the exmples without these outliers, and plot the mininum AIC
+If we plot the AIC figures without the outliers we have: 
+```{r, echo=FALSE}
+FIG_AIC_model_sin <- DF_TOTAL_1000 %>% 
+  filter(AIC_model != "Inf")%>% 
+  filter(AIC_model > 4500)%>%
+  ggplot(aes(x= model, y= AIC_model))+
+  geom_jitter(aes(x= model, y= AIC_model, shape= model, fill= model), size= 4)+
+  #scale_fill_manual(values = colorsGris) +
+  scale_fill_manual(values = groupColors3) +
+  scale_shape_manual(values = c(21, 24, 22))+
+  theme_bw()
+
+FIG_AIC_model_sin
+```
+
+We observe some minimum values per model, that we are going to use. 
 
 ```{r}
 DF_TOTAL_MIN <- DF_TOTAL_1000 %>%
@@ -256,16 +312,18 @@ for (i in seq(1,dim(DF_TOTAL_MIN)[1],1)){
 ```
 
 
-```{r}
-plot(modelos_p$gamma, animals = c("I_Car12", "I_MigSam4", "H_Fran6", "H_Fran9"), ask = FALSE, plotTracks = TRUE)
+```{r, fig.show='hold', out.width="50%"}
+plot(modelos_p$gamma, animals = c("I_Car12", "H_Fran9"), ask = FALSE, plotTracks = TRUE, breaks = 100, col = groupColors2, lwd=3.0)
 ```
 
-```{r}
-plot(modelos_p$lnorm, animals = c("I_Car12", "I_MigSam4", "H_Fran6", "H_Fran9"), ask = FALSE, plotTracks = TRUE)
+```{r, fig.show='hold', out.width="50%"}
+plot(modelos_p$lnorm, animals = c("I_Car12", "H_Fran9"), ask = FALSE, plotTracks = TRUE, breaks = 100, col = groupColors2, lwd=3.0)
 ```
-```{r}
-plot(modelos_p$weibull, animals = c("I_Car12", "I_MigSam4", "H_Fran6", "H_Fran9"), ask = FALSE, plotTracks = TRUE)
+
+```{r, fig.show='hold', out.width="50%"}
+plot(modelos_p$weibull, animals = c("I_Car12", "H_Fran9"), ask = FALSE, plotTracks = TRUE, breaks = 100, col = groupColors2, lwd=3.0)
 ```
+
 
 
 

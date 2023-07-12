@@ -1,0 +1,623 @@
+% Options for packages loaded elsewhere
+\PassOptionsToPackage{unicode}{hyperref}
+\PassOptionsToPackage{hyphens}{url}
+%
+\documentclass[
+]{article}
+\usepackage{amsmath,amssymb}
+\usepackage{lmodern}
+\usepackage{iftex}
+\ifPDFTeX
+  \usepackage[T1]{fontenc}
+  \usepackage[utf8]{inputenc}
+  \usepackage{textcomp} % provide euro and other symbols
+\else % if luatex or xetex
+  \usepackage{unicode-math}
+  \defaultfontfeatures{Scale=MatchLowercase}
+  \defaultfontfeatures[\rmfamily]{Ligatures=TeX,Scale=1}
+\fi
+% Use upquote if available, for straight quotes in verbatim environments
+\IfFileExists{upquote.sty}{\usepackage{upquote}}{}
+\IfFileExists{microtype.sty}{% use microtype if available
+  \usepackage[]{microtype}
+  \UseMicrotypeSet[protrusion]{basicmath} % disable protrusion for tt fonts
+}{}
+\makeatletter
+\@ifundefined{KOMAClassName}{% if non-KOMA class
+  \IfFileExists{parskip.sty}{%
+    \usepackage{parskip}
+  }{% else
+    \setlength{\parindent}{0pt}
+    \setlength{\parskip}{6pt plus 2pt minus 1pt}}
+}{% if KOMA class
+  \KOMAoptions{parskip=half}}
+\makeatother
+\usepackage{xcolor}
+\usepackage[margin=1in]{geometry}
+\usepackage{color}
+\usepackage{fancyvrb}
+\newcommand{\VerbBar}{|}
+\newcommand{\VERB}{\Verb[commandchars=\\\{\}]}
+\DefineVerbatimEnvironment{Highlighting}{Verbatim}{commandchars=\\\{\}}
+% Add ',fontsize=\small' for more characters per line
+\usepackage{framed}
+\definecolor{shadecolor}{RGB}{248,248,248}
+\newenvironment{Shaded}{\begin{snugshade}}{\end{snugshade}}
+\newcommand{\AlertTok}[1]{\textcolor[rgb]{0.94,0.16,0.16}{#1}}
+\newcommand{\AnnotationTok}[1]{\textcolor[rgb]{0.56,0.35,0.01}{\textbf{\textit{#1}}}}
+\newcommand{\AttributeTok}[1]{\textcolor[rgb]{0.77,0.63,0.00}{#1}}
+\newcommand{\BaseNTok}[1]{\textcolor[rgb]{0.00,0.00,0.81}{#1}}
+\newcommand{\BuiltInTok}[1]{#1}
+\newcommand{\CharTok}[1]{\textcolor[rgb]{0.31,0.60,0.02}{#1}}
+\newcommand{\CommentTok}[1]{\textcolor[rgb]{0.56,0.35,0.01}{\textit{#1}}}
+\newcommand{\CommentVarTok}[1]{\textcolor[rgb]{0.56,0.35,0.01}{\textbf{\textit{#1}}}}
+\newcommand{\ConstantTok}[1]{\textcolor[rgb]{0.00,0.00,0.00}{#1}}
+\newcommand{\ControlFlowTok}[1]{\textcolor[rgb]{0.13,0.29,0.53}{\textbf{#1}}}
+\newcommand{\DataTypeTok}[1]{\textcolor[rgb]{0.13,0.29,0.53}{#1}}
+\newcommand{\DecValTok}[1]{\textcolor[rgb]{0.00,0.00,0.81}{#1}}
+\newcommand{\DocumentationTok}[1]{\textcolor[rgb]{0.56,0.35,0.01}{\textbf{\textit{#1}}}}
+\newcommand{\ErrorTok}[1]{\textcolor[rgb]{0.64,0.00,0.00}{\textbf{#1}}}
+\newcommand{\ExtensionTok}[1]{#1}
+\newcommand{\FloatTok}[1]{\textcolor[rgb]{0.00,0.00,0.81}{#1}}
+\newcommand{\FunctionTok}[1]{\textcolor[rgb]{0.00,0.00,0.00}{#1}}
+\newcommand{\ImportTok}[1]{#1}
+\newcommand{\InformationTok}[1]{\textcolor[rgb]{0.56,0.35,0.01}{\textbf{\textit{#1}}}}
+\newcommand{\KeywordTok}[1]{\textcolor[rgb]{0.13,0.29,0.53}{\textbf{#1}}}
+\newcommand{\NormalTok}[1]{#1}
+\newcommand{\OperatorTok}[1]{\textcolor[rgb]{0.81,0.36,0.00}{\textbf{#1}}}
+\newcommand{\OtherTok}[1]{\textcolor[rgb]{0.56,0.35,0.01}{#1}}
+\newcommand{\PreprocessorTok}[1]{\textcolor[rgb]{0.56,0.35,0.01}{\textit{#1}}}
+\newcommand{\RegionMarkerTok}[1]{#1}
+\newcommand{\SpecialCharTok}[1]{\textcolor[rgb]{0.00,0.00,0.00}{#1}}
+\newcommand{\SpecialStringTok}[1]{\textcolor[rgb]{0.31,0.60,0.02}{#1}}
+\newcommand{\StringTok}[1]{\textcolor[rgb]{0.31,0.60,0.02}{#1}}
+\newcommand{\VariableTok}[1]{\textcolor[rgb]{0.00,0.00,0.00}{#1}}
+\newcommand{\VerbatimStringTok}[1]{\textcolor[rgb]{0.31,0.60,0.02}{#1}}
+\newcommand{\WarningTok}[1]{\textcolor[rgb]{0.56,0.35,0.01}{\textbf{\textit{#1}}}}
+\usepackage{graphicx}
+\makeatletter
+\def\maxwidth{\ifdim\Gin@nat@width>\linewidth\linewidth\else\Gin@nat@width\fi}
+\def\maxheight{\ifdim\Gin@nat@height>\textheight\textheight\else\Gin@nat@height\fi}
+\makeatother
+% Scale images if necessary, so that they will not overflow the page
+% margins by default, and it is still possible to overwrite the defaults
+% using explicit options in \includegraphics[width, height, ...]{}
+\setkeys{Gin}{width=\maxwidth,height=\maxheight,keepaspectratio}
+% Set default figure placement to htbp
+\makeatletter
+\def\fps@figure{htbp}
+\makeatother
+\setlength{\emergencystretch}{3em} % prevent overfull lines
+\providecommand{\tightlist}{%
+  \setlength{\itemsep}{0pt}\setlength{\parskip}{0pt}}
+\setcounter{secnumdepth}{-\maxdimen} % remove section numbering
+\ifLuaTeX
+  \usepackage{selnolig}  % disable illegal ligatures
+\fi
+\IfFileExists{bookmark.sty}{\usepackage{bookmark}}{\usepackage{hyperref}}
+\IfFileExists{xurl.sty}{\usepackage{xurl}}{} % add URL line breaks if available
+\urlstyle{same} % disable monospaced font for URLs
+\hypersetup{
+  pdftitle={R Notebook},
+  hidelinks,
+  pdfcreator={LaTeX via pandoc}}
+
+\title{R Notebook}
+\author{}
+\date{\vspace{-2.5em}}
+
+\begin{document}
+\maketitle
+
+\#Analisis de las trayectorias usando HMM (Hidden Markov Chains)
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\FunctionTok{library}\NormalTok{(ggplot2)}
+\FunctionTok{library}\NormalTok{(viridis)}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+## Loading required package: viridisLite
+\end{verbatim}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\FunctionTok{library}\NormalTok{(dplyr)}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+## 
+## Attaching package: 'dplyr'
+\end{verbatim}
+
+\begin{verbatim}
+## The following objects are masked from 'package:stats':
+## 
+##     filter, lag
+\end{verbatim}
+
+\begin{verbatim}
+## The following objects are masked from 'package:base':
+## 
+##     intersect, setdiff, setequal, union
+\end{verbatim}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\FunctionTok{library}\NormalTok{(tidyverse)}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+## -- Attaching core tidyverse packages ------------------------ tidyverse 2.0.0 --
+## v forcats   1.0.0     v stringr   1.5.0
+## v lubridate 1.9.2     v tibble    3.2.1
+## v purrr     1.0.1     v tidyr     1.3.0
+## v readr     2.1.4
+\end{verbatim}
+
+\begin{verbatim}
+## -- Conflicts ------------------------------------------ tidyverse_conflicts() --
+## x dplyr::filter() masks stats::filter()
+## x dplyr::lag()    masks stats::lag()
+## i Use the conflicted package (<http://conflicted.r-lib.org/>) to force all conflicts to become errors
+\end{verbatim}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\FunctionTok{library}\NormalTok{(moveHMM)}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+## Loading required package: CircStats
+## Loading required package: MASS
+## 
+## Attaching package: 'MASS'
+## 
+## The following object is masked from 'package:dplyr':
+## 
+##     select
+## 
+## Loading required package: boot
+## The legacy packages maptools, rgdal, and rgeos, underpinning this package
+## will retire shortly. Please refer to R-spatial evolution reports on
+## https://r-spatial.org/r/2023/05/15/evolution4.html for details.
+## This package is now running under evolution status 0
+\end{verbatim}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\NormalTok{colorsGris }\OtherTok{\textless{}{-}} \FunctionTok{c}\NormalTok{(}\StringTok{"black"}\NormalTok{,}\StringTok{"\#555555"}\NormalTok{, }\StringTok{"white"}\NormalTok{)}
+\NormalTok{groupColors3 }\OtherTok{\textless{}{-}} \FunctionTok{c}\NormalTok{(}\StringTok{"\#021128"}\NormalTok{, }\StringTok{"\#fd9706"}\NormalTok{, }\StringTok{"\#1b4a64"}\NormalTok{ )}
+\NormalTok{groupColors2 }\OtherTok{\textless{}{-}} \FunctionTok{c}\NormalTok{(}\StringTok{"\#021128"}\NormalTok{, }\StringTok{"\#fd9706"}\NormalTok{)}
+\end{Highlighting}
+\end{Shaded}
+
+I. We load the data from the trajectories and do some punctual
+modifications
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\NormalTok{WP\_COSECHA\_UTM\_SP }\OtherTok{\textless{}{-}} \FunctionTok{read.csv}\NormalTok{(}\StringTok{"../data/cleanData\_wayPointsCoffee\_UTM.csv"}\NormalTok{, }\AttributeTok{stringsAsFactors =} \ConstantTok{FALSE}\NormalTok{ )}
+
+\NormalTok{WP\_COSECHA\_UTM\_SP }\OtherTok{\textless{}{-}}\NormalTok{ WP\_COSECHA\_UTM\_SP }\SpecialCharTok{\%\textgreater{}\%}
+  \FunctionTok{mutate}\NormalTok{(}\AttributeTok{finca =} \FunctionTok{replace}\NormalTok{(finca, finca }\SpecialCharTok{==} \StringTok{"Irlanda"}\NormalTok{, }\StringTok{"I"}\NormalTok{)) }\SpecialCharTok{\%\textgreater{}\%}
+  \FunctionTok{mutate}\NormalTok{(}\AttributeTok{finca =} \FunctionTok{replace}\NormalTok{(finca, finca }\SpecialCharTok{==} \StringTok{"Hamburgo"}\NormalTok{, }\StringTok{"H"}\NormalTok{))}
+
+\NormalTok{WP\_COSECHA\_UTM\_SP}\SpecialCharTok{$}\NormalTok{zona[WP\_COSECHA\_UTM\_SP}\SpecialCharTok{$}\NormalTok{zona }\SpecialCharTok{==} \StringTok{"falta"}\NormalTok{] }\OtherTok{\textless{}{-}} \StringTok{"zonaBaja"}
+
+\NormalTok{WP\_COSECHA\_UTM\_SP }\OtherTok{\textless{}{-}}\NormalTok{ WP\_COSECHA\_UTM\_SP }\SpecialCharTok{\%\textgreater{}\%} \FunctionTok{rowwise}\NormalTok{() }\SpecialCharTok{\%\textgreater{}\%} 
+  \FunctionTok{group\_by}\NormalTok{(ID\_REC, pante)}\SpecialCharTok{\%\textgreater{}\%}  \CommentTok{\#esto debe seguirse con lo de aajo}
+  \FunctionTok{mutate}\NormalTok{(}\AttributeTok{xNorm =}\NormalTok{ x\_UTM }\SpecialCharTok{{-}} \FunctionTok{min}\NormalTok{(x\_UTM)) }\SpecialCharTok{\%\textgreater{}\%}
+  \FunctionTok{mutate}\NormalTok{(}\AttributeTok{yNorm =}\NormalTok{ y\_UTM }\SpecialCharTok{{-}} \FunctionTok{min}\NormalTok{(y\_UTM))}
+
+\CommentTok{\#now the precision (not the accuracy) of the GPS goes to 5 decimal points (lat y lot) and this is equivalent to \textasciitilde{}1m}
+\CommentTok{\#so we can round the xNorm and y yNorm}
+
+\NormalTok{WP\_COSECHA\_UTM\_SP}\SpecialCharTok{$}\NormalTok{xNorm }\OtherTok{\textless{}{-}} \FunctionTok{round}\NormalTok{(WP\_COSECHA\_UTM\_SP}\SpecialCharTok{$}\NormalTok{xNorm, }\DecValTok{0}\NormalTok{)}
+\NormalTok{WP\_COSECHA\_UTM\_SP}\SpecialCharTok{$}\NormalTok{yNorm }\OtherTok{\textless{}{-}} \FunctionTok{round}\NormalTok{(WP\_COSECHA\_UTM\_SP}\SpecialCharTok{$}\NormalTok{yNorm, }\DecValTok{0}\NormalTok{)}
+
+\CommentTok{\#we remove some spurious data were delta = 0}
+\NormalTok{WP\_COSECHA\_UTM\_SP }\OtherTok{\textless{}{-}}\NormalTok{ WP\_COSECHA\_UTM\_SP }\SpecialCharTok{\%\textgreater{}\%}
+  \FunctionTok{filter}\NormalTok{(delta }\SpecialCharTok{!=}\DecValTok{0}\NormalTok{)}\SpecialCharTok{\%\textgreater{}\%}
+  \FunctionTok{unite}\NormalTok{(}\StringTok{"Finca\_ID\_REC"}\NormalTok{, finca, ID\_REC, }\AttributeTok{remove =} \ConstantTok{FALSE}\NormalTok{)}
+
+\CommentTok{\#we create this ID column to prepare the data for movehmm}
+\NormalTok{WP\_COSECHA\_UTM\_SP\_PRE }\OtherTok{\textless{}{-}}\NormalTok{ WP\_COSECHA\_UTM\_SP }\SpecialCharTok{\%\textgreater{}\%}
+\NormalTok{  dplyr}\SpecialCharTok{::}\FunctionTok{select}\NormalTok{(}\StringTok{"ID"} \OtherTok{=}\NormalTok{ Finca\_ID\_REC, xNorm, yNorm)}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+## Adding missing grouping variables: `ID_REC`, `pante`
+\end{verbatim}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\NormalTok{WP\_COSECHA\_UTM\_SP\_PRE}\SpecialCharTok{$}\NormalTok{pante }\OtherTok{\textless{}{-}} \ConstantTok{NULL}
+\NormalTok{WP\_COSECHA\_UTM\_SP\_PRE}\SpecialCharTok{$}\NormalTok{ID\_REC }\OtherTok{\textless{}{-}} \ConstantTok{NULL}
+
+\FunctionTok{head}\NormalTok{(WP\_COSECHA\_UTM\_SP\_PRE)}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+## # A tibble: 6 x 3
+##   ID     xNorm yNorm
+##   <chr>  <dbl> <dbl>
+## 1 I_Ger1   146   117
+## 2 I_Ger1   143   115
+## 3 I_Ger1   143   118
+## 4 I_Ger1   141   115
+## 5 I_Ger1   139   116
+## 6 I_Ger1   139   111
+\end{verbatim}
+
+We create the data for movehmm
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\NormalTok{dataCosecha }\OtherTok{\textless{}{-}} \FunctionTok{prepData}\NormalTok{(WP\_COSECHA\_UTM\_SP\_PRE, }\AttributeTok{type=} \StringTok{"UTM"}\NormalTok{, }\AttributeTok{coordNames =} \FunctionTok{c}\NormalTok{(}\StringTok{"xNorm"}\NormalTok{, }\StringTok{"yNorm"}\NormalTok{))}
+
+\CommentTok{\#we remove the steps equal to zero (when the worker harvest 2 trees separated by less than a meter..)}
+\NormalTok{dataCosecha }\OtherTok{\textless{}{-}}\NormalTok{ dataCosecha }\SpecialCharTok{\%\textgreater{}\%} 
+  \FunctionTok{filter}\NormalTok{(step}\SpecialCharTok{!=} \DecValTok{0}\NormalTok{)  }\CommentTok{\#we remove the zeros}
+
+\FunctionTok{summary}\NormalTok{(dataCosecha)}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+## Movement data for 12 tracks:
+## I_Ger1 -- 100 observations
+## I_Ger2 -- 80 observations
+## I_Mig3 -- 107 observations
+## I_MigSam4 -- 76 observations
+## H_Fran5 -- 77 observations
+## H_Fran6 -- 70 observations
+## H_Fran7 -- 115 observations
+## H_Fran8 -- 63 observations
+## H_Fran9 -- 97 observations
+## I_Sam10 -- 104 observations
+## H_Fran11 -- 88 observations
+## I_Car12 -- 158 observations
+## No covariates.
+\end{verbatim}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\CommentTok{\#anglesFalse \textless{}{-} runif(dim(dataCosecha)[1], {-}pi, pi)}
+\CommentTok{\#dataCosecha$angle \textless{}{-} anglesFalse}
+
+\CommentTok{\#dataCosecha$angle \textless{}{-} NULL}
+
+\FunctionTok{head}\NormalTok{(dataCosecha)}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+##       ID     step     angle   x   y
+## 1 I_Ger1 3.605551        NA 146 117
+## 2 I_Ger1 3.000000 -2.158799 143 115
+## 3 I_Ger1 3.605551  2.553590 143 118
+## 4 I_Ger1 2.236068 -1.446441 141 115
+## 5 I_Ger1 5.000000  2.034444 139 116
+## 6 I_Ger1 3.605551 -2.158799 139 111
+\end{verbatim}
+
+We are going to keep the irregular trayectory, and only use the
+step-length. (to only register the big displacements, independently of
+the time)
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\NormalTok{rangosDist }\OtherTok{\textless{}{-}} \FunctionTok{list}\NormalTok{(}\StringTok{"gamma"} \OtherTok{=} \FunctionTok{list}\NormalTok{(}\StringTok{"mean"} \OtherTok{=} \FunctionTok{c}\NormalTok{(}\FloatTok{0.1}\NormalTok{, }\DecValTok{15}\NormalTok{), }\StringTok{"sd"} \OtherTok{=} \FunctionTok{c}\NormalTok{(}\FloatTok{0.1}\NormalTok{,}\DecValTok{15}\NormalTok{)), }
+                   \StringTok{"weibull"} \OtherTok{=} \FunctionTok{list}\NormalTok{(}\StringTok{"shape"} \OtherTok{=} \FunctionTok{c}\NormalTok{(}\DecValTok{0}\NormalTok{, }\FloatTok{2.7}\NormalTok{), }\StringTok{"scale"} \OtherTok{=} \FunctionTok{c}\NormalTok{(}\FloatTok{0.1}\NormalTok{,}\DecValTok{15}\NormalTok{)),  }\DocumentationTok{\#\#segun el articulo}
+                   \StringTok{"lnorm"} \OtherTok{=}  \FunctionTok{list}\NormalTok{(}\StringTok{"location"} \OtherTok{=} \FunctionTok{c}\NormalTok{(}\SpecialCharTok{{-}}\DecValTok{1}\NormalTok{, }\DecValTok{20}\NormalTok{), }\StringTok{"scale"} \OtherTok{=} \FunctionTok{c}\NormalTok{(}\FloatTok{0.001}\NormalTok{,}\DecValTok{3}\NormalTok{)))}
+
+\NormalTok{DF\_TOTAL }\OtherTok{\textless{}{-}} \FunctionTok{data.frame}\NormalTok{(}\StringTok{"model"}\OtherTok{=} \DecValTok{0}\NormalTok{, }
+            \StringTok{"prior\_par0\_st1\_st2"}\OtherTok{=} \DecValTok{0}\NormalTok{,}
+            \StringTok{"prior\_par1\_st1\_st2"} \OtherTok{=} \DecValTok{0}\NormalTok{,}
+           \StringTok{"minNegLike"} \OtherTok{=} \DecValTok{0}\NormalTok{,}
+           \StringTok{"AIC\_model"} \OtherTok{=} \DecValTok{0}\NormalTok{,}
+           \StringTok{"st1\_par0"}\OtherTok{=} \DecValTok{0}\NormalTok{,}
+           \StringTok{"st1\_par1"}\OtherTok{=}\DecValTok{0}\NormalTok{,}
+           \StringTok{"st2\_par0"}\OtherTok{=}\DecValTok{0}\NormalTok{,}
+           \StringTok{"st2\_par1"}\OtherTok{=} \DecValTok{0}\NormalTok{)}
+
+
+\DocumentationTok{\#\#\#loop to explore  multiple combinations of parameters}
+
+\NormalTok{repetitions }\OtherTok{\textless{}{-}} \FunctionTok{seq}\NormalTok{(}\DecValTok{1}\NormalTok{, }\DecValTok{1000}\NormalTok{,}\DecValTok{1}\NormalTok{)}
+\NormalTok{runModel }\OtherTok{\textless{}{-}} \StringTok{"no"}
+\ControlFlowTok{if}\NormalTok{ (runModel }\SpecialCharTok{==} \StringTok{"yes"}\NormalTok{)\{}
+\ControlFlowTok{for}\NormalTok{ (modelStep }\ControlFlowTok{in} \FunctionTok{c}\NormalTok{(}\StringTok{"weibull"}\NormalTok{, }\StringTok{"gamma"}\NormalTok{, }\StringTok{"lnorm"}\NormalTok{))\{}
+  \FunctionTok{print}\NormalTok{(modelStep)}
+\NormalTok{  rangePar0 }\OtherTok{\textless{}{-}} \FunctionTok{runif}\NormalTok{(}\DecValTok{100000}\NormalTok{, rangosDist[[modelStep]][[}\DecValTok{1}\NormalTok{]][}\DecValTok{1}\NormalTok{], rangosDist[[modelStep]][[}\DecValTok{1}\NormalTok{]][}\DecValTok{2}\NormalTok{])}
+\NormalTok{  rangePar1 }\OtherTok{\textless{}{-}} \FunctionTok{runif}\NormalTok{(}\DecValTok{100000}\NormalTok{, rangosDist[[modelStep]][[}\DecValTok{2}\NormalTok{]][}\DecValTok{1}\NormalTok{], rangosDist[[modelStep]][[}\DecValTok{2}\NormalTok{]][}\DecValTok{2}\NormalTok{])}
+  \ControlFlowTok{for}\NormalTok{ (rep }\ControlFlowTok{in}\NormalTok{ repetitions)\{}
+\NormalTok{    par0 }\OtherTok{\textless{}{-}} \FunctionTok{c}\NormalTok{(}\FunctionTok{sample}\NormalTok{(rangePar0,}\DecValTok{1}\NormalTok{, }\AttributeTok{replace=} \ConstantTok{TRUE}\NormalTok{),}
+              \FunctionTok{sample}\NormalTok{(rangePar0,}\DecValTok{1}\NormalTok{, }\AttributeTok{replace=} \ConstantTok{TRUE}\NormalTok{)) }\CommentTok{\# step mean (two parameters: one for each state)}
+\NormalTok{    par1 }\OtherTok{\textless{}{-}} \FunctionTok{c}\NormalTok{(}\FunctionTok{sample}\NormalTok{(rangePar1,}\DecValTok{1}\NormalTok{, }\AttributeTok{replace=} \ConstantTok{TRUE}\NormalTok{), }
+              \FunctionTok{sample}\NormalTok{(rangePar1,}\DecValTok{1}\NormalTok{, }\AttributeTok{replace=} \ConstantTok{TRUE}\NormalTok{)) }
+\NormalTok{    par0 }\OtherTok{\textless{}{-}} \FunctionTok{round}\NormalTok{(par0, }\DecValTok{4}\NormalTok{)}
+\NormalTok{    par1 }\OtherTok{\textless{}{-}} \FunctionTok{round}\NormalTok{(par1, }\DecValTok{4}\NormalTok{)}
+    \CommentTok{\#print(par0)}
+    \CommentTok{\#print(par1)}
+\NormalTok{    stepPar }\OtherTok{\textless{}{-}} \FunctionTok{c}\NormalTok{(par0,par1)}
+  \CommentTok{\#op1}
+    \FunctionTok{tryCatch}\NormalTok{(\{}
+\NormalTok{    m\_cosecha}\OtherTok{\textless{}{-}} \FunctionTok{fitHMM}\NormalTok{(}\AttributeTok{data =}\NormalTok{ dataCosecha, }\AttributeTok{stepDist =}\NormalTok{ modelStep,  }
+                       \AttributeTok{nbStates =} \DecValTok{2}\NormalTok{ , }\AttributeTok{stepPar0 =}\NormalTok{ stepPar, }\AttributeTok{angleDist =} \StringTok{"none"}\NormalTok{)}
+\NormalTok{    \},}
+    \AttributeTok{error=}\ControlFlowTok{function}\NormalTok{(cond)\{}
+      \FunctionTok{print}\NormalTok{(}\StringTok{"error de parametros"}\NormalTok{)}
+      \FunctionTok{print}\NormalTok{(stepPar)}
+      \FunctionTok{message}\NormalTok{(cond)}
+\NormalTok{    \}}
+\NormalTok{    )}
+    
+\NormalTok{    minNegLike }\OtherTok{\textless{}{-}}\NormalTok{  m\_cosecha}\SpecialCharTok{$}\NormalTok{mod}\SpecialCharTok{$}\NormalTok{minimum}
+\NormalTok{    AIC\_model }\OtherTok{\textless{}{-}} \FunctionTok{AIC}\NormalTok{(m\_cosecha)}
+    
+\NormalTok{    DF\_TEMP }\OtherTok{\textless{}{-}} \FunctionTok{data.frame}\NormalTok{(}\StringTok{"model"}\OtherTok{=}\NormalTok{ modelStep, }
+                          \StringTok{"prior\_par0\_st1\_st2"}\OtherTok{=} \FunctionTok{paste}\NormalTok{(par0[}\DecValTok{1}\NormalTok{], }\StringTok{"\_"}\NormalTok{, par0[}\DecValTok{2}\NormalTok{]), }
+                          \StringTok{"prior\_par1\_st1\_st2"}\OtherTok{=}  \FunctionTok{paste}\NormalTok{(par1[}\DecValTok{1}\NormalTok{], }\StringTok{"\_"}\NormalTok{, par1[}\DecValTok{2}\NormalTok{]),}
+                          \StringTok{"minNegLike"} \OtherTok{=}\NormalTok{ minNegLike,}
+                          \StringTok{"AIC\_model"} \OtherTok{=}\NormalTok{ AIC\_model,}
+                          \StringTok{"st1\_par0"}\OtherTok{=}\NormalTok{ m\_cosecha}\SpecialCharTok{$}\NormalTok{mle}\SpecialCharTok{$}\NormalTok{stepPar[}\DecValTok{1}\NormalTok{,}\DecValTok{1}\NormalTok{],}
+                          \StringTok{"st1\_par1"}\OtherTok{=}\NormalTok{ m\_cosecha}\SpecialCharTok{$}\NormalTok{mle}\SpecialCharTok{$}\NormalTok{stepPar[}\DecValTok{2}\NormalTok{,}\DecValTok{1}\NormalTok{],}
+                          \StringTok{"st2\_par0"}\OtherTok{=}\NormalTok{ m\_cosecha}\SpecialCharTok{$}\NormalTok{mle}\SpecialCharTok{$}\NormalTok{stepPar[}\DecValTok{1}\NormalTok{,}\DecValTok{2}\NormalTok{],}
+                          \StringTok{"st2\_par1"}\OtherTok{=}\NormalTok{ m\_cosecha}\SpecialCharTok{$}\NormalTok{mle}\SpecialCharTok{$}\NormalTok{stepPar[}\DecValTok{2}\NormalTok{,}\DecValTok{2}\NormalTok{])}
+    
+                      
+\NormalTok{    DF\_TOTAL }\OtherTok{\textless{}{-}} \FunctionTok{rbind}\NormalTok{(DF\_TOTAL, DF\_TEMP)    }
+    
+    
+\NormalTok{      \}}
+\NormalTok{\}}
+
+\NormalTok{DF\_TOTAL }\OtherTok{\textless{}{-}}\NormalTok{ DF\_TOTAL}\SpecialCharTok{\%\textgreater{}\%}
+  \FunctionTok{filter}\NormalTok{(model }\SpecialCharTok{!=} \DecValTok{0}\NormalTok{)}
+\NormalTok{\}}
+\CommentTok{\#write\_csv(DF\_TOTAL, "../output/wholeTable\_1000\_rep\_0\_20.csv")}
+\end{Highlighting}
+\end{Shaded}
+
+Now from that total, we explore the different AIC values
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\NormalTok{DF\_TOTAL\_1000 }\OtherTok{\textless{}{-}} \FunctionTok{read.csv}\NormalTok{(}\StringTok{"../output/wholeTable\_1000\_rep\_0\_20.csv"}\NormalTok{)}
+\NormalTok{DF\_TOTAL\_1000 }\OtherTok{\textless{}{-}}\NormalTok{ DF\_TOTAL\_1000 }\SpecialCharTok{\%\textgreater{}\%}
+  \FunctionTok{separate}\NormalTok{(prior\_par0\_st1\_st2, }\FunctionTok{c}\NormalTok{(}\StringTok{"prior\_par0\_st1"}\NormalTok{, }\StringTok{"prior\_par0\_st2"}\NormalTok{), }\AttributeTok{sep=} \StringTok{"\_"}\NormalTok{, }\AttributeTok{remove =} \ConstantTok{TRUE}\NormalTok{) }\SpecialCharTok{\%\textgreater{}\%}
+  \FunctionTok{separate}\NormalTok{(prior\_par1\_st1\_st2, }\FunctionTok{c}\NormalTok{(}\StringTok{"prior\_par1\_st1"}\NormalTok{, }\StringTok{"prior\_par1\_st2"}\NormalTok{), }\AttributeTok{sep=} \StringTok{"\_"}\NormalTok{, }\AttributeTok{remove =} \ConstantTok{TRUE}\NormalTok{)}
+
+
+
+\NormalTok{FIG\_AIC\_model }\OtherTok{\textless{}{-}}\NormalTok{ DF\_TOTAL\_1000 }\SpecialCharTok{\%\textgreater{}\%} 
+  \FunctionTok{filter}\NormalTok{(AIC\_model }\SpecialCharTok{!=} \StringTok{"Inf"}\NormalTok{)}\SpecialCharTok{\%\textgreater{}\%} 
+  \FunctionTok{ggplot}\NormalTok{(}\FunctionTok{aes}\NormalTok{(}\AttributeTok{x=}\NormalTok{ model, }\AttributeTok{y=}\NormalTok{ AIC\_model))}\SpecialCharTok{+}
+  \FunctionTok{geom\_jitter}\NormalTok{(}\FunctionTok{aes}\NormalTok{(}\AttributeTok{x=}\NormalTok{ model, }\AttributeTok{y=}\NormalTok{ AIC\_model, }\AttributeTok{shape=}\NormalTok{ model, }\AttributeTok{fill=}\NormalTok{ model), }\AttributeTok{size=} \DecValTok{4}\NormalTok{)}\SpecialCharTok{+}
+  \CommentTok{\#scale\_fill\_manual(values = colorsGris) +}
+  \FunctionTok{scale\_fill\_manual}\NormalTok{(}\AttributeTok{values =}\NormalTok{ groupColors3) }\SpecialCharTok{+}
+  \FunctionTok{scale\_shape\_manual}\NormalTok{(}\AttributeTok{values =} \FunctionTok{c}\NormalTok{(}\DecValTok{21}\NormalTok{, }\DecValTok{24}\NormalTok{, }\DecValTok{22}\NormalTok{))}\SpecialCharTok{+}
+  \FunctionTok{theme\_bw}\NormalTok{()}
+
+\NormalTok{FIG\_AIC\_model}
+\end{Highlighting}
+\end{Shaded}
+
+\includegraphics{analisis_moveHMM_RM_files/figure-latex/unnamed-chunk-5-1.pdf}
+
+From this we can see that for some specific values of prior parameters,
+the AIC reaches some minimal values, for each model
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\NormalTok{DF\_1000\_OUTLIERS }\OtherTok{\textless{}{-}}\NormalTok{ DF\_TOTAL\_1000 }\SpecialCharTok{\%\textgreater{}\%}
+  \FunctionTok{filter}\NormalTok{(AIC\_model }\SpecialCharTok{\textless{}=}\DecValTok{4500}\NormalTok{)}
+\NormalTok{DF\_1000\_OUTLIERS[,}\FunctionTok{c}\NormalTok{(}\DecValTok{6}\NormalTok{,}\DecValTok{7}\NormalTok{,}\DecValTok{8}\NormalTok{,}\DecValTok{9}\NormalTok{)] }\OtherTok{\textless{}{-}} \FunctionTok{round}\NormalTok{(DF\_1000\_OUTLIERS[,}\FunctionTok{c}\NormalTok{(}\DecValTok{6}\NormalTok{,}\DecValTok{7}\NormalTok{,}\DecValTok{8}\NormalTok{,}\DecValTok{9}\NormalTok{)], }\DecValTok{3}\NormalTok{)}
+\end{Highlighting}
+\end{Shaded}
+
+We can see that for gamma distribution, all the outliers (with minimum
+AIC) suggest two equivalent states
+
+gamma state 1: gamma(location: {[}4-9{]}, shape {[}3-7{]}). This is a
+state that will characterize almost all steps. state 2: gamma(location:
+{[}2{]}, shape {[}0{]})- A state that only considers the 2 m steps, with
+no variance.
+
+lnorm state 1: lnorm({[}1.498-1.6{]}, shape: 0). Astate that ony
+considers state 2 lnorm ({[}1.4{]}, {[}0.6{]})
+
+We show now the representations of both of theses distrributions (we
+choose 2 lines randomly with the same priors)
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\NormalTok{DF\_1000\_OUTLIERS}\OtherTok{\textless{}{-}}\NormalTok{ DF\_1000\_OUTLIERS }\SpecialCharTok{\%\textgreater{}\%}
+  \FunctionTok{mutate}\NormalTok{(}\AttributeTok{contador =} \DecValTok{1}\NormalTok{)}\SpecialCharTok{\%\textgreater{}\%}
+  \FunctionTok{group\_by}\NormalTok{(model) }\SpecialCharTok{\%\textgreater{}\%}
+  \FunctionTok{mutate}\NormalTok{(}\AttributeTok{countModel =} \FunctionTok{cumsum}\NormalTok{(contador))}
+
+\NormalTok{OUTLIERS\_EX }\OtherTok{\textless{}{-}}\NormalTok{ DF\_1000\_OUTLIERS }\SpecialCharTok{\%\textgreater{}\%}
+  \FunctionTok{filter}\NormalTok{(countModel }\SpecialCharTok{==} \DecValTok{1}\NormalTok{)}
+
+\NormalTok{modelos\_OUTLIERS }\OtherTok{\textless{}{-}} \FunctionTok{list}\NormalTok{(}\StringTok{"gamma"} \OtherTok{=} \DecValTok{0}\NormalTok{, }
+     \StringTok{"gamma"} \OtherTok{=} \DecValTok{0}\NormalTok{,  }\DocumentationTok{\#\#segun el articulo}
+     \StringTok{"lnorm"} \OtherTok{=}  \DecValTok{0}\NormalTok{)}
+
+\ControlFlowTok{for}\NormalTok{ (i }\ControlFlowTok{in} \FunctionTok{seq}\NormalTok{(}\DecValTok{1}\NormalTok{, }\FunctionTok{dim}\NormalTok{(OUTLIERS\_EX)[}\DecValTok{1}\NormalTok{],}\DecValTok{1}\NormalTok{))\{}
+\NormalTok{  par0\_p }\OtherTok{\textless{}{-}} \FunctionTok{as.numeric}\NormalTok{(}\FunctionTok{c}\NormalTok{(OUTLIERS\_EX}\SpecialCharTok{$}\NormalTok{prior\_par0\_st1[i], OUTLIERS\_EX}\SpecialCharTok{$}\NormalTok{prior\_par0\_st2[i]))}
+\NormalTok{  par1\_p }\OtherTok{\textless{}{-}} \FunctionTok{as.numeric}\NormalTok{(}\FunctionTok{c}\NormalTok{(OUTLIERS\_EX}\SpecialCharTok{$}\NormalTok{prior\_par1\_st1[i], OUTLIERS\_EX}\SpecialCharTok{$}\NormalTok{prior\_par1\_st2[i]))}
+\NormalTok{  stepPar0\_p }\OtherTok{\textless{}{-}} \FunctionTok{c}\NormalTok{(par0\_p, par1\_p)}
+  \FunctionTok{print}\NormalTok{(stepPar0\_p)}
+  \CommentTok{\#op1}
+\NormalTok{  m\_cosecha\_OUT}\OtherTok{\textless{}{-}} \FunctionTok{fitHMM}\NormalTok{(}\AttributeTok{data =}\NormalTok{ dataCosecha, }\AttributeTok{nbStates =} \DecValTok{2}\NormalTok{ , }\AttributeTok{stepPar0 =}\NormalTok{ stepPar0\_p, }\AttributeTok{angleDist =} \StringTok{"none"}\NormalTok{, }\AttributeTok{stepDist =} \FunctionTok{as.character}\NormalTok{(OUTLIERS\_EX}\SpecialCharTok{$}\NormalTok{model[i]))}
+\NormalTok{  modelos\_OUTLIERS[[}\FunctionTok{as.character}\NormalTok{(OUTLIERS\_EX}\SpecialCharTok{$}\NormalTok{model[i])]] }\OtherTok{\textless{}{-}}\NormalTok{ m\_cosecha\_OUT }
+\NormalTok{\}}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+## [1]  0.5604 11.6111  2.5790  0.2883
+## [1]  2.1913 -0.4793  2.9106  0.7930
+\end{verbatim}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\FunctionTok{print}\NormalTok{(}\StringTok{"dei"}\NormalTok{)}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+## [1] "dei"
+\end{verbatim}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\FunctionTok{plot}\NormalTok{(modelos\_OUTLIERS}\SpecialCharTok{$}\NormalTok{gamma, }\AttributeTok{animals =} \FunctionTok{c}\NormalTok{(}\StringTok{"I\_Car12"}\NormalTok{, }\StringTok{"H\_Fran9"}\NormalTok{), }\AttributeTok{ask =} \ConstantTok{FALSE}\NormalTok{, }\AttributeTok{plotTracks =} \ConstantTok{TRUE}\NormalTok{, }\AttributeTok{breaks =} \DecValTok{100}\NormalTok{, }\AttributeTok{col =}\NormalTok{ groupColors2, }\AttributeTok{lwd=}\FloatTok{3.0}\NormalTok{)}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+## Decoding states sequence... DONE
+\end{verbatim}
+
+\includegraphics[width=0.5\linewidth]{analisis_moveHMM_RM_files/figure-latex/unnamed-chunk-8-1}
+\includegraphics[width=0.5\linewidth]{analisis_moveHMM_RM_files/figure-latex/unnamed-chunk-8-2}
+\includegraphics[width=0.5\linewidth]{analisis_moveHMM_RM_files/figure-latex/unnamed-chunk-8-3}
+\includegraphics[width=0.5\linewidth]{analisis_moveHMM_RM_files/figure-latex/unnamed-chunk-8-4}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\FunctionTok{plot}\NormalTok{(modelos\_OUTLIERS}\SpecialCharTok{$}\NormalTok{lnorm, }\AttributeTok{animals =} \FunctionTok{c}\NormalTok{(}\StringTok{"I\_Car12"}\NormalTok{, }\StringTok{"H\_Fran9"}\NormalTok{), }\AttributeTok{ask =} \ConstantTok{FALSE}\NormalTok{, }\AttributeTok{plotTracks =} \ConstantTok{TRUE}\NormalTok{, }\AttributeTok{breaks =} \DecValTok{100}\NormalTok{, }\AttributeTok{col =}\NormalTok{ groupColors2, }\AttributeTok{lwd=}\FloatTok{3.0}\NormalTok{)}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+## Decoding states sequence... DONE
+\end{verbatim}
+
+\includegraphics[width=0.5\linewidth]{analisis_moveHMM_RM_files/figure-latex/unnamed-chunk-9-1}
+\includegraphics[width=0.5\linewidth]{analisis_moveHMM_RM_files/figure-latex/unnamed-chunk-9-2}
+\includegraphics[width=0.5\linewidth]{analisis_moveHMM_RM_files/figure-latex/unnamed-chunk-9-3}
+\includegraphics[width=0.5\linewidth]{analisis_moveHMM_RM_files/figure-latex/unnamed-chunk-9-4}
+
+As we can see, it only separates the model when the variance is null for
+one distribtuon, this does not make any biological sense.
+
+So now, we are going to plot the exmples without these outliers, and
+plot the mininum AIC
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\NormalTok{DF\_TOTAL\_MIN }\OtherTok{\textless{}{-}}\NormalTok{ DF\_TOTAL\_1000 }\SpecialCharTok{\%\textgreater{}\%}
+  \FunctionTok{filter}\NormalTok{(AIC\_model }\SpecialCharTok{\textgreater{}} \DecValTok{4500}\NormalTok{)}\SpecialCharTok{\%\textgreater{}\%}
+  \FunctionTok{group\_by}\NormalTok{(model)}\SpecialCharTok{\%\textgreater{}\%}
+  \FunctionTok{filter}\NormalTok{(AIC\_model }\SpecialCharTok{==} \FunctionTok{min}\NormalTok{(AIC\_model))}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\NormalTok{modelos\_p }\OtherTok{\textless{}{-}} \FunctionTok{list}\NormalTok{(}\StringTok{"gamma"} \OtherTok{=} \DecValTok{0}\NormalTok{, }
+     \StringTok{"weibull"} \OtherTok{=} \DecValTok{0}\NormalTok{,  }\DocumentationTok{\#\#segun el articulo}
+     \StringTok{"lnorm"} \OtherTok{=}  \DecValTok{0}\NormalTok{)}
+
+\ControlFlowTok{for}\NormalTok{ (i }\ControlFlowTok{in} \FunctionTok{seq}\NormalTok{(}\DecValTok{1}\NormalTok{,}\FunctionTok{dim}\NormalTok{(DF\_TOTAL\_MIN)[}\DecValTok{1}\NormalTok{],}\DecValTok{1}\NormalTok{))\{}
+\NormalTok{  par0\_p }\OtherTok{\textless{}{-}} \FunctionTok{as.numeric}\NormalTok{(}\FunctionTok{c}\NormalTok{(DF\_TOTAL\_MIN}\SpecialCharTok{$}\NormalTok{prior\_par0\_st1[i], DF\_TOTAL\_MIN}\SpecialCharTok{$}\NormalTok{prior\_par0\_st2[i]))}
+\NormalTok{  par1\_p }\OtherTok{\textless{}{-}} \FunctionTok{as.numeric}\NormalTok{(}\FunctionTok{c}\NormalTok{(DF\_TOTAL\_MIN}\SpecialCharTok{$}\NormalTok{prior\_par1\_st1[i], DF\_TOTAL\_MIN}\SpecialCharTok{$}\NormalTok{prior\_par1\_st2[i]))}
+\NormalTok{  stepPar0\_p }\OtherTok{\textless{}{-}} \FunctionTok{c}\NormalTok{(par0\_p, par1\_p)}
+  \FunctionTok{print}\NormalTok{(stepPar0\_p)}
+  \CommentTok{\#op1}
+\NormalTok{  m\_cosecha\_p}\OtherTok{\textless{}{-}} \FunctionTok{fitHMM}\NormalTok{(}\AttributeTok{data =}\NormalTok{ dataCosecha, }\AttributeTok{nbStates =} \DecValTok{2}\NormalTok{ , }\AttributeTok{stepPar0 =}\NormalTok{ stepPar0\_p, }\AttributeTok{angleDist =} \StringTok{"none"}\NormalTok{, }\AttributeTok{stepDist =} \FunctionTok{as.character}\NormalTok{(DF\_TOTAL\_MIN}\SpecialCharTok{$}\NormalTok{model[i]))}
+\NormalTok{  modelos\_p[[}\FunctionTok{as.character}\NormalTok{(DF\_TOTAL\_MIN}\SpecialCharTok{$}\NormalTok{model[i])]] }\OtherTok{\textless{}{-}}\NormalTok{ m\_cosecha\_p }
+\NormalTok{\}}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+## [1] 2.4863 1.8593 5.4759 3.6922
+## [1]  4.8484  8.1161  9.1001 10.4365
+## [1] 0.9891 0.0533 1.4661 1.2188
+\end{verbatim}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\FunctionTok{plot}\NormalTok{(modelos\_p}\SpecialCharTok{$}\NormalTok{gamma, }\AttributeTok{animals =} \FunctionTok{c}\NormalTok{(}\StringTok{"I\_Car12"}\NormalTok{, }\StringTok{"H\_Fran9"}\NormalTok{), }\AttributeTok{ask =} \ConstantTok{FALSE}\NormalTok{, }\AttributeTok{plotTracks =} \ConstantTok{TRUE}\NormalTok{, }\AttributeTok{breaks =} \DecValTok{100}\NormalTok{, }\AttributeTok{col =}\NormalTok{ groupColors2, }\AttributeTok{lwd=}\FloatTok{3.0}\NormalTok{)}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+## Decoding states sequence... DONE
+\end{verbatim}
+
+\includegraphics[width=0.5\linewidth]{analisis_moveHMM_RM_files/figure-latex/unnamed-chunk-12-1}
+\includegraphics[width=0.5\linewidth]{analisis_moveHMM_RM_files/figure-latex/unnamed-chunk-12-2}
+\includegraphics[width=0.5\linewidth]{analisis_moveHMM_RM_files/figure-latex/unnamed-chunk-12-3}
+\includegraphics[width=0.5\linewidth]{analisis_moveHMM_RM_files/figure-latex/unnamed-chunk-12-4}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\FunctionTok{plot}\NormalTok{(modelos\_p}\SpecialCharTok{$}\NormalTok{lnorm, }\AttributeTok{animals =} \FunctionTok{c}\NormalTok{(}\StringTok{"I\_Car12"}\NormalTok{, }\StringTok{"H\_Fran9"}\NormalTok{), }\AttributeTok{ask =} \ConstantTok{FALSE}\NormalTok{, }\AttributeTok{plotTracks =} \ConstantTok{TRUE}\NormalTok{, }\AttributeTok{breaks =} \DecValTok{100}\NormalTok{, }\AttributeTok{col =}\NormalTok{ groupColors2, }\AttributeTok{lwd=}\FloatTok{3.0}\NormalTok{)}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+## Decoding states sequence... DONE
+\end{verbatim}
+
+\includegraphics[width=0.5\linewidth]{analisis_moveHMM_RM_files/figure-latex/unnamed-chunk-13-1}
+\includegraphics[width=0.5\linewidth]{analisis_moveHMM_RM_files/figure-latex/unnamed-chunk-13-2}
+\includegraphics[width=0.5\linewidth]{analisis_moveHMM_RM_files/figure-latex/unnamed-chunk-13-3}
+\includegraphics[width=0.5\linewidth]{analisis_moveHMM_RM_files/figure-latex/unnamed-chunk-13-4}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\FunctionTok{plot}\NormalTok{(modelos\_p}\SpecialCharTok{$}\NormalTok{weibull, }\AttributeTok{animals =} \FunctionTok{c}\NormalTok{(}\StringTok{"I\_Car12"}\NormalTok{, }\StringTok{"H\_Fran9"}\NormalTok{), }\AttributeTok{ask =} \ConstantTok{FALSE}\NormalTok{, }\AttributeTok{plotTracks =} \ConstantTok{TRUE}\NormalTok{, }\AttributeTok{breaks =} \DecValTok{100}\NormalTok{, }\AttributeTok{col =}\NormalTok{ groupColors2, }\AttributeTok{lwd=}\FloatTok{3.0}\NormalTok{)}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+## Decoding states sequence... DONE
+\end{verbatim}
+
+\includegraphics[width=0.5\linewidth]{analisis_moveHMM_RM_files/figure-latex/unnamed-chunk-14-1}
+\includegraphics[width=0.5\linewidth]{analisis_moveHMM_RM_files/figure-latex/unnamed-chunk-14-2}
+\includegraphics[width=0.5\linewidth]{analisis_moveHMM_RM_files/figure-latex/unnamed-chunk-14-3}
+\includegraphics[width=0.5\linewidth]{analisis_moveHMM_RM_files/figure-latex/unnamed-chunk-14-4}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\NormalTok{FIG\_AIC\_model }\OtherTok{\textless{}{-}}\NormalTok{ DF\_TOTAL }\SpecialCharTok{\%\textgreater{}\%} 
+  \FunctionTok{filter}\NormalTok{(AIC\_model }\SpecialCharTok{!=} \StringTok{"Inf"}\NormalTok{)}\SpecialCharTok{\%\textgreater{}\%} 
+  \FunctionTok{ggplot}\NormalTok{(}\FunctionTok{aes}\NormalTok{(}\AttributeTok{x=}\NormalTok{ model, }\AttributeTok{y=}\NormalTok{ AIC\_model))}\SpecialCharTok{+}
+  \FunctionTok{geom\_boxplot}\NormalTok{(}\FunctionTok{aes}\NormalTok{(}\AttributeTok{fill=}\NormalTok{ model))}\SpecialCharTok{+}
+  \FunctionTok{geom\_jitter}\NormalTok{(}\FunctionTok{aes}\NormalTok{(}\AttributeTok{x=}\NormalTok{ model, }\AttributeTok{y=}\NormalTok{ AIC\_model), }\AttributeTok{col=} \StringTok{"darkred"}\NormalTok{)}\SpecialCharTok{+}
+  \FunctionTok{scale\_fill\_manual}\NormalTok{(}\AttributeTok{values =}\NormalTok{ colorsGris) }\SpecialCharTok{+}
+  \FunctionTok{theme\_bw}\NormalTok{()}
+
+\CommentTok{\#ggsave(FIG\_AIC\_model,filename=paste("../output/", "FIG\_AIC\_MODEL\_100", ".png", sep=""),  height = 5, width = 16) \# ID will be the unique identifier. and change the extension from .png to whatever you like (eps, pdf etc)}
+
+\NormalTok{FIG\_AIC\_model\_sinOut }\OtherTok{\textless{}{-}}\NormalTok{ DF\_TOTAL }\SpecialCharTok{\%\textgreater{}\%} 
+  \FunctionTok{filter}\NormalTok{(AIC\_model }\SpecialCharTok{!=} \StringTok{"Inf"}\NormalTok{)}\SpecialCharTok{\%\textgreater{}\%} 
+  \FunctionTok{filter}\NormalTok{(AIC\_model }\SpecialCharTok{\textgreater{}}\DecValTok{4000}\NormalTok{)}\SpecialCharTok{\%\textgreater{}\%} 
+  \FunctionTok{ggplot}\NormalTok{(}\FunctionTok{aes}\NormalTok{(}\AttributeTok{x=}\NormalTok{ model, }\AttributeTok{y=}\NormalTok{ AIC\_model))}\SpecialCharTok{+}
+  \FunctionTok{geom\_boxplot}\NormalTok{(}\FunctionTok{aes}\NormalTok{(}\AttributeTok{fill=}\NormalTok{ model), }\AttributeTok{width =} \FloatTok{0.2}\NormalTok{)}\SpecialCharTok{+}
+  \FunctionTok{geom\_jitter}\NormalTok{(}\FunctionTok{aes}\NormalTok{(}\AttributeTok{x=}\NormalTok{ model, }\AttributeTok{y=}\NormalTok{ AIC\_model), }\AttributeTok{col=} \StringTok{"darkred"}\NormalTok{, }\AttributeTok{width =} \FloatTok{0.1}\NormalTok{)}\SpecialCharTok{+}
+  \FunctionTok{scale\_fill\_manual}\NormalTok{(}\AttributeTok{values =}\NormalTok{ colorsGris)}\SpecialCharTok{+}
+  \FunctionTok{theme\_bw}\NormalTok{()}
+
+\CommentTok{\#ggsave(FIG\_AIC\_model\_sinOut,filename=paste("../output/", "FIG\_AIC\_100\_SINOUT\_MODEL", ".png", sep=""),  height = 5, width = 16) \# ID will be the unique identifier. and change the extension from .png to whatever you like (eps, pdf etc)}
+\end{Highlighting}
+\end{Shaded}
+
+
+\end{document}
