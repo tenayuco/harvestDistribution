@@ -1,26 +1,32 @@
 ---
-title: "Insights on the movement of harvesters using HMM"
+title: "Insights on the trajectories of harvesters using HMM"
 output:
   html_document:
     df_print: paged
   html_notebook: default
   pdf_document: default
+  author: Emilio Mora
 ---
+
+In this document I will explain the main results and interpretations of the analysis of the spatial trajectories of the harvesters using Hidden Markov Models (HMM)
 
 ## I. Preparation of data   
 
-We load ggplot2, dplyr, tidyverse and movehmm libraries used during the analysis. 
+We load ggplot2, dplyr, tidyverse and movehmm libraries used during the analysis. We then load the data of the trajectories and do some punctual modifications to it. We show here the first rows. 
+
 ```{r, message=FALSE, echo=FALSE}
 library(ggplot2)
 library(dplyr)
 library(tidyverse)
 library(moveHMM)
+library(reshape2)
 colorsGris <- c("black","#555555", "white")
 groupColors3 <- c("#021128", "#fd9706", "#1b4a64" )
 groupColors2 <- c("#021128", "#fd9706")
+mycols3c <-c("#759580", "#1b4a64")
+
 ```
 
-We then load the data of the trajectories and do some punctual modifications on it:
 
 ```{r, echo=FALSE, message=FALSE}
 WP_COSECHA_UTM_SP <- read.csv("../data/cleanData_wayPointsCoffee_UTM.csv", stringsAsFactors = FALSE )
@@ -57,7 +63,29 @@ WP_COSECHA_UTM_SP_PRE$ID_REC <- NULL
 head(WP_COSECHA_UTM_SP_PRE)
 ```
 
-We convert it to a movehmm object:
+And the next figure show the different trajectories per farm. 
+
+
+```{r echo=FALSE, warning=FALSE, fig.height= 12, fig.width=10}
+mapHarvest_total<- WP_COSECHA_UTM_SP_PRE %>% 
+  separate(ID, into = c("Finca", "IDREC"), sep = "_", remove = FALSE)%>% 
+  ggplot(aes(x= xNorm, y = yNorm)) +
+  geom_path(aes(col= Finca), size= 1)+
+  geom_point(size=1)+ # es importante que sea path, porque así lo hace según coo estan ordenados los
+  scale_color_manual(values= mycols3c)+
+  facet_wrap(~ ID, ncol=3)+
+  theme(panel.spacing = unit(0.8, "lines"), text = element_text(size = 15))+
+  theme_bw()+
+  labs(x= "X_norm", y= "Y_norm", col= "Farm")
+
+#ggsave("../output/mapHarvest_I.png", height = 8, width = 12, device = "png")
+
+mapHarvest_total
+```
+
+
+In this first approach, we made no difference between the two farms for the analysis of the states (but will use it a posteriori). A first assumption for the analysis is made: we took these time irregular trajectories (where each point represents one different tree, but where the time between two trees is variable) and will treat them as a regular trajectories. We only want to analyze if the movement of the workers across the plots has different states (taking all the trajectories into account). This also assumes that the underneath pattern of trees is relatively homogeneous and is not the main determinant of the trajectories. We convert this data base into a movehmm object: 
+
 ```{r, echo=FALSE}
 dataCosecha <- prepData(WP_COSECHA_UTM_SP_PRE, type= "UTM", coordNames = c("xNorm", "yNorm"))
 
@@ -71,26 +99,70 @@ summary(dataCosecha)
 head(dataCosecha)
 ```
 
-Now, we are going to keep the time-irregular trajectory and treat as a regular trajectory. This implies that we can't assume velocity of the workers. Nonetheless, this analysis helps us to see the pattern of workers across the trees and differentiate short and large steps between trees, during harvesting. Also we will only use, to simplify, the steplength to caracterize the movement.
+We can see that the distance step and the relative angle is calculated for each of the 12 trajectories. We show the histograms of both the steps and the angles. We separate colors for the different farms, but we will treat it as the same (and then analyze the frequency of states per farm). 
 
-```{r}
-hist(dataCosecha$step, breaks = 100)
+
+
+```{r echo=FALSE, warning=FALSE, fig.height= 4, fig.width=8}
+pHisto_step <-dataCosecha %>%
+separate(ID, into = c("Finca", "IDREC"), sep = "_", remove = FALSE)%>%
+  ggplot(aes(x= as.numeric(step), y=(..count..)/tapply(..count..,..PANEL..,sum)[..PANEL..])) +
+  geom_histogram(binwidth=2, color= "black", aes(fill=as.character(Finca))) +
+scale_fill_manual(values= mycols3c)+  
+facet_wrap(~Finca)+
+  theme(panel.spacing = unit(0.8, "lines"),
+        text = element_text(size = 15))+
+  theme_bw()+ 
+   labs(x= "Distance (in m)", y= "Proportion", fill= "Farm")
+pHisto_step
 ```
+
+```{r echo=FALSE, warning=FALSE, fig.height= 4, fig.width=8}
+pHisto_angle <-dataCosecha %>%
+separate(ID, into = c("Finca", "IDREC"), sep = "_", remove = FALSE)%>%
+  ggplot(aes(x= as.numeric(angle), y=(..count..)/tapply(..count..,..PANEL..,sum)[..PANEL..])) +
+  geom_histogram(binwidth=0.5, color= "black", aes(fill=as.character(Finca))) +
+    coord_polar(theta="x", start=pi/2, direction=-1)+
+scale_fill_manual(values= mycols3c)+  
+facet_wrap(~Finca)+
+  theme(panel.spacing = unit(0.8, "lines"),
+        text = element_text(size = 15))+
+  theme_bw()+ 
+   labs(x= "Angle (in radians)", y= "Proportion", fill= "Farm")
+pHisto_angle
+```
+
+Now, for the following analysis, we will only use the step distance and treat both farms as one. We decide to not include the angles to simplify the analysis and interpretation. In this sense, the input for the analysis is the following histogram:
+
+
+```{r echo=FALSE, warning=FALSE, fig.height= 6, fig.width=10}
+pHisto_step_general <-dataCosecha %>%
+  ggplot(aes(x= as.numeric(step), y=(..count..)/tapply(..count..,..PANEL..,sum)[..PANEL..])) +
+  geom_histogram(binwidth=2, color= "black", aes(fill=as.character(ID))) +
+scale_fill_viridis_d()+  
+  theme(panel.spacing = unit(0.8, "lines"),
+        text = element_text(size = 15))+
+  theme_bw()+ 
+   labs(x= "Distance (in m)", y= "Proportion", fill= "ID")
+pHisto_step_general
+```
+
 
 ## II. Movehmm analysis
 
-The library movehmm uses a Hidden Markov Model (HMM) to characterize states (the HMM) that belong to a specific distribution (gamma, weibull or lnorm) using "emissions" of the states (aka the steps lengths) and calculating, using a likelihood function, both the transitions probabilities between the states and the probabilties of each step of belonging to each of the states. 
+The library movehmm uses HMM to separate trajectories into multiple states (the hidden markov states) that are supposed to belong to specific probability distributions (e.g. gamma, lnorm, weibull) using the "emissions" of the states (in this case, the step lengths or angles). The algorithm estimates the most likely distributions of angles and step length of each state, the transition probabilities and the probabilty of each of the "emissions" to come from each of the states. 
 
-The algoritm uses: 
+It uses: 
 
 - a predefined distribution with prior parameters (guesses)
-
-- a dataset of step lengths
-
+- a dataset of step lengths and angles (here we will only use the step lengths)
 - a predefined number of states
 
 #### a) Priors parameters
-Here we first explore (using **), the ranges of each of the parameters for each distributions. We are going to run 1000 combinations between each of the ranges, for each of the models.  
+
+We used 3 different models for the step lengths to approach the distributions of the states (weibull, lnorm and gamma). In order to avoid local maximal likelihoods, we swapped across a range of prior parameters for each model (1000). The min and max values of each range were chosen using ** and trying to use distribution that could encompass the histogram presented previously (gamma and weibull parameters). For the weibull distribution, the maximum shape was considering the left-skew and the scale was consider to include the 120 m steps. It is important to note that these are only priors guesses, and the real parameters can outbound these limits. Many these combinations of prior parameters converge to the same final parameters.  
+
+
 
 ```{r, echo=FALSE}
 rangosDist <- list("gamma" = list("mean" = c(0.1, 20), "sd" = c(0.1,20)), 
@@ -102,11 +174,10 @@ DF_rangos <- cbind(DF_rangos, as.data.frame(rangosDist))
 DF_rangos
 ```
 
-These limits were adjusted looking at the general distribution of the steps lengths (see previous figure). For the gamma mean and sd, we check the maximum possible values to include the 120 meters steps. For the weibull, the maximum shape was considering the left-skew and the scale was consider to include the 120 m steps. For lnorm, the location was varied to mimic **, and the scale was varied accordingly to include all the steps. It is important to note that these are only priors guesses, and the real parameters can outbound these limits. The utility of sweeping these priors is to avoid local likelihood maximums (or negative likelihoods minimums). 
 
 #### b) States, models and whole loop
 
-After this decision, we predefined 2 states and load the database. We ran the models for 1000 combinations of priors, 3 distributions for the step lengths (gamma, lnorm and weibull). For each model we register the minimun likelihood and the minimum AIC (both values should be equivalent, since all the models have the same number of parameters). 
+After this decision, we predefined 2 states and load the database. We ran the models for the 1000 combinations of priors and the 3 distributions. For each model we register the minimum negative-likelihood and the minimum AIC (both values should be proportional, since all the models have the same number of parameters). 
 
 ```{r, echo=FALSE}
 DF_TOTAL <- data.frame("model"= 0, 
@@ -187,7 +258,13 @@ DF_TOTAL_1000$prior_par1_st1 <- as.numeric(DF_TOTAL_1000$prior_par1_st1)
 DF_TOTAL_1000$prior_par0_st2 <- as.numeric(DF_TOTAL_1000$prior_par0_st2)
 DF_TOTAL_1000$prior_par1_st2 <- as.numeric(DF_TOTAL_1000$prior_par1_st2)
 
+DF_TOTAL_1000[,seq(2,11,1)] <- round(DF_TOTAL_1000[,seq(2,11,1)], 2)
 
+```
+
+
+
+```{r, echo=FALSE}
 FIG_AIC_model <- DF_TOTAL_1000 %>% 
   filter(AIC_model != "Inf")%>% 
   ggplot(aes(x= model, y= AIC_model))+
@@ -206,26 +283,49 @@ We filter the priors and resulting parameters for these outliers:
 
 ```{r, echo=FALSE}
 DF_1000_OUTLIERS <- DF_TOTAL_1000 %>%
-  filter(AIC_model <=4500)
-DF_1000_OUTLIERS[,seq(2,11,1)] <- round(DF_1000_OUTLIERS[,seq(2,11,1)], 2)
+  filter(AIC_model <=5250)
 
+DF_1000_OUTLIERS <- DF_1000_OUTLIERS %>%
+  group_by(model) %>%
+  mutate(conteo = 1)%>%
+  mutate(contador = cumsum(conteo))
 DF_1000_OUTLIERS
 ```
 
-If we focus on the generated states (st1_par0, st1_par1, st2_par0 and st2_par1) we note that:
 
-- for the gamma distributions, all the models suggest almost the same parameters for both states**invert states
+```{r echo=FALSE}
+DF_1000_OUTLIERS_MELT <- DF_1000_OUTLIERS %>%
+  dplyr:: select(model, st1_par0, st1_par1, st2_par0, st2_par1, contador)%>%
+  melt(id = c("model", "contador")) %>%
+  separate(variable, into = c("state", "parameter"), sep= "_")
 
-- State 1.gamma(mean [5-9.22], sd[3.25-8.81]). This is a state that will characterize almost all steps. 
+DF_par0 <- DF_1000_OUTLIERS_MELT %>%
+  filter(parameter == "par0")
 
-- state 2: gamma(mean[2-4], sd[0])- A state that only considers the 2 to 4 m steps, with no variance. 
+DF_1000_OUTLIERS_MELT <- DF_1000_OUTLIERS_MELT %>%
+  filter(parameter == "par1")
 
-- For the lnorm distribution, the two states are equivalent
+DF_1000_OUTLIERS_MELT <- merge(DF_1000_OUTLIERS_MELT, DF_par0, by= c("model", "contador", "state"))
+```
 
-state 2 lnorm (location[1.37-1.43], shape[0.66])-a state that **
-- state 1: lnorm([1.5-1.6], shape:0). 
+If we plot 5 examples of the parameter 1 (blue dots as it represent a measure of the mean) and the parameter 2 (blue line, as it represents a measure of variance) for each of the model we get the following figure: 
 
-If we observe (using the viterbi algoritm) how these model divide the trajectories:
+```{r echo=FALSE}
+FIG_Parameters_OUT <- DF_1000_OUTLIERS_MELT %>% 
+  filter(contador <6)%>% 
+  ggplot(aes(x= state, y = value.y))+
+  geom_point(col= "black",  size= 2)+
+  geom_errorbar(size=0.5, aes(
+    ymin=value.y- value.x,  ymax=value.y+ value.x), col = "blue") +
+  scale_color_viridis_d()+
+  facet_grid(model~contador)+
+  scale_shape_manual(values = c(21, 24, 22))+
+  theme_bw()
+
+FIG_Parameters_OUT
+```
+
+We note that in both cases, one of the state has 0 variance (and a particular low value of the mean) and the other state has non null variance. In this sense, this second stae represents almost all the steps. If we observe (using the viterbi algoritm) how these model divide the trajectories:
 
 ```{r, echo=FALSE}
 
@@ -250,9 +350,6 @@ for (i in seq(1, dim(OUTLIERS_EX)[1],1)){
   m_cosecha_OUT<- fitHMM(data = dataCosecha, nbStates = 2 , stepPar0 = stepPar0_p, angleDist = "none", stepDist = as.character(OUTLIERS_EX$model[i]))
   modelos_OUTLIERS[[as.character(OUTLIERS_EX$model[i])]] <- m_cosecha_OUT 
 }
-
-print("dei")
-
 ```
 
 For the gamma distribution (we show an example with 2 trajectories)
@@ -271,7 +368,7 @@ If we plot the AIC figures without the outliers we have:
 ```{r, echo=FALSE}
 FIG_AIC_model_sin <- DF_TOTAL_1000 %>% 
   filter(AIC_model != "Inf")%>% 
-  filter(AIC_model > 4500)%>%
+  filter(AIC_model > 5250)%>%
   ggplot(aes(x= model, y= AIC_model))+
   geom_jitter(aes(x= model, y= AIC_model, shape= model, fill= model), size= 4)+
   #scale_fill_manual(values = colorsGris) +
@@ -288,7 +385,11 @@ We observe some minimum values per model, that we are going to use.
 DF_TOTAL_MIN <- DF_TOTAL_1000 %>%
   filter(AIC_model > 4500)%>%
   group_by(model)%>%
-  filter(AIC_model == min(AIC_model))
+  filter(AIC_model == min(AIC_model)) %>%
+  group_by(model, AIC_model) %>%
+  mutate(conteo = 1)%>%
+  mutate(contador= cumsum(conteo))%>%
+  filter(contador ==1)
 ```
 
 ```{r}
