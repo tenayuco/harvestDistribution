@@ -171,7 +171,7 @@ rangosDist <- list("gamma" = list("mean" = c(0.1, 20), "sd" = c(0.1,20)),
 
 DF_rangos <- data.frame("value" = c("min", "max"))
 DF_rangos <- cbind(DF_rangos, as.data.frame(rangosDist))
-kable(DF_rangos, caption = "Minimun and maximum values of the parameters of the distribution")
+kable(DF_rangos, caption = "Minimun and maximum values of the prior parameters for each distribution")
 ```
 
 
@@ -260,7 +260,13 @@ DF_TOTAL_1000[,seq(2,11,1)] <- round(DF_TOTAL_1000[,seq(2,11,1)], 2)
 
 ```
 
-For each combination of parameters we registered the final parameters and the minimum negative log-likelihood. The minimum negative log-likelihood is equivalent to the maximum likelihood. Some combinations resulted in distributions with zero variance. We decided to remove those cases as they did not make any biological sense. We then plotted the min negative log of the likelihood without these outliers (Fig. 6). We then chose, for each family of distributions the model that had the minimum AIC value (table 3). 
+For each combination of parameters we registered the final parameters and the minimum negative log-likelihood. The minimum negative log-likelihood is equivalent to the maximum likelihood. 
+
+\newpage
+
+## 2. Description of the states, for each studied distribution.
+
+Some combinations resulted in distributions with zero variance. We decided to remove those cases as they did not make any biological sense. We then plotted the min negative log of the likelihood without these outliers (Fig. 6). We note that almost all the combinations of prior parameters converge to two minimum likelihoods. We chose, for each family of distributions the model that had the minimum AIC value (table 3). 
 
 ```{r, echo=FALSE}
 #here we have the outiers that were removed
@@ -273,15 +279,13 @@ DF_1000_OUTLIERS <- DF_1000_OUTLIERS %>%
   mutate(contador = cumsum(conteo))
 ```
 
-
-
 ```{r, echo=FALSE}
 DF_1000_SIN <- DF_TOTAL_1000 %>%
   filter(st1_par1 >0.00001 & st2_par1 >0.00001)
 ```
 
 
-```{r, fig.cap= "Minimun Negative Log-likelihood per combination of prior parameters for three different distributions", echo=FALSE, fig.height= 2, fig.width=3}
+```{r, fig.cap= "Minimun Negative Log-likelihood per combination of prior parameters for two different distributions", echo=FALSE, fig.height= 3, fig.width=5}
 FIG_AIC_model <- DF_1000_SIN %>% 
   filter(AIC_model != "Inf")%>% 
   ggplot()+
@@ -316,12 +320,19 @@ names(DF_TOTAL_MIN_SHOW) <- (c("model","pr_st1_p1", "pr_st1_p2", "pr_st2_p1", "p
 kable(DF_TOTAL_MIN_SHOW, caption = "Best models for each of the distributions. pr:prior, st1: state 1, p1: parameter 1 (shape for weibull and mean for gamma, p2: parameter 2 (scale for weibull and sd for gamma).")
 ```
 
+We plotted the two state distributions for _gamma_ and for _weibull_ families (see figure. 7 and table 4 for the final parameters). For both families, one of the states produced a distribution that encompass all highly frequent short steps and falls abruptly for size steps bigger than 13 m. The other state generates a long tailed distribution with a lower probability of short steps (compared to the other distribution) and a non zero probability for steps bigger than 13 m (Fig. 7 and table 4).
 
-\newpage
 
-## 2. Results: Description of the states, for each studied distribution. 
+```{r echo=FALSE}
+finalParameters <- read.csv("./tableParameters.csv")
+finalParameters[,2] <- round(finalParameters[,2],2)
+finalParameters[,3] <- round(finalParameters[,3],2)
 
-We plotted the two state distributions for _gamma_ and for _weibull_ families (Fig. 7). For both families of distribution, one of the states produces a distribution that encompass all highly frequent short steps and falls abruptly size steps around 13 m. The other state generates long tailed distribution with a lower probability and short steps (compared to the other distribution) and a non zero probability for steps bigger than 13 m (Fig. 7)
+kable(finalParameters, caption = "Final parameters for both gamma and weibull distributions. For the gamma distribution $\\alpha = \\mu/\\sigma^2$; $\\beta = \\mu^2/\\sigma^2$; $\\theta = 1/\\beta$.")
+
+```
+
+
 
 ```{r echo=FALSE}
 
@@ -340,7 +351,7 @@ DF_DISTRI <- rbind(DF_weibull_st1, DF_weibull_st2, DF_gamma_st1, DF_gamma_st2)
 ```
 
 
-```{r echo=FALSE, warning=FALSE, fig.cap= "2 state model distrutions", fig.height= 5, fig.width=10}
+```{r echo=FALSE, warning=FALSE, fig.cap= "Two state model distributions. The used parameters are shown in Table 4", fig.height= 5, fig.width=10}
 
 DIS_PLOT<- ggplot() +
   geom_histogram(data= dataCosecha, size= 0.2, aes(x= as.numeric(step), y=(..count..)/tapply(..count..,..PANEL..,sum)[..PANEL..]), binwidth=2, color= "white", fill= "#CCCCCC") +
@@ -355,8 +366,9 @@ DIS_PLOT
 
 ```
 
+This results makes sense with our intuition, and confirms that harvesters have two behaviors that generate two significantly different trajectories: when they walk to the closest tree, or when they have to move to another part of the plot. The gamma distribution showed a lower AIC and is the best fitting for our data. We took two trajectories (Fran9 and Car12) to illustrate both states with the gamma distribution, where we can see the most likely states across the trajectories (Fig. 8).
 
-```{r, echo=FALSE}
+```{r, echo=FALSE, message=FALSE}
 modelos_p <- list("gamma" = 0, 
      "weibull" = 0)
 
@@ -372,54 +384,60 @@ for (i in seq(1,dim(DF_TOTAL_MIN)[1],1)){
 
 ```
 
-#### DAIII
 
-For each dis..
+```{r echo=FALSE, fig.cap="Distribution of states $St$ along two trajectories. Each color follow the code of colors of Fig.7)", fig.keep=c(3,4), fig.show='hold', message=FALSE, out.width="50%"}
 
-```{r, fig.show='hold', out.width="50%", echo=FALSE, fig.cap="Weibull model", fig.keep=c(1,2,5,6)}
+#plotStates(modelos_p$gamma, ask = F, animals = c( "H_Fran9", "I_Car12"))
 
-plotStates(modelos_p$weibull, ask = F, animals = c( "H_Fran9", "I_Car12"))
-
-plot(modelos_p$weibull, animals = c("H_Fran9", "I_Car12"), ask = F, plotTracks = TRUE, breaks = 100, col = groupColors2, lwd=3.0)
+plot(modelos_p$gamma, animals = c("H_Fran9", "I_Car12"), ask = F, plotTracks = TRUE, breaks = 100, col = groupColors2, lwd=3.0)
 ```
 
+## 3. Probabilities of states per farm
 
-
-
-
-
-```{r, fig.show='hold', out.width="50%", echo=FALSE, fig.cap="Gamma model"}
-# plot(modelos_p$gamma, animals = c("I_Car12", "H_Fran9"), ask = FALSE, plotTracks = TRUE, breaks = 100, col = groupColors2, lwd=3.0)
-# 
-# ```{r echo=FALSE}
-# DF_1000_OUTLIERS_MELT <- DF_1000_OUTLIERS %>%
-#   dplyr:: select(model, st1_par0, st1_par1, st2_par0, st2_par1, contador)%>%
-#   melt(id = c("model", "contador")) %>%
-#   separate(variable, into = c("state", "parameter"), sep= "_")
-# 
-# DF_par0 <- DF_1000_OUTLIERS_MELT %>%
-#   filter(parameter == "par0")
-# 
-# DF_1000_OUTLIERS_MELT <- DF_1000_OUTLIERS_MELT %>%
-#   filter(parameter == "par1")
-# 
-# DF_1000_OUTLIERS_MELT <- merge(DF_1000_OUTLIERS_MELT, DF_par0, by= c("model", "contador", "state"))
-```
+We now estimate, once the given distribution of states per trajectories, the
 
 ```{r echo=FALSE}
-# FIG_Parameters_OUT <- DF_1000_OUTLIERS_MELT %>% 
-#   filter(contador <6)%>% 
-#   ggplot(aes(x= state, y = value.y))+
-#   geom_point(col= "black",  size= 2)+
-#   geom_errorbar(size=0.5, aes(
-#     ymin=value.y- value.x,  ymax=value.y+ value.x), col = "blue") +
-#   scale_color_viridis_d()+
-#   facet_grid(model~contador)+
-#   scale_shape_manual(values = c(21, 24, 22))+
-#   theme_bw()
-# 
-# FIG_Parameters_OUT
+
+dataCosecha_V <- dataCosecha
+dataCosecha_V$state <- viterbi(modelos_p$gamma)
+
+dataCosecha_V <- dataCosecha_V %>%
+  mutate(conteo = 1)%>%
+  group_by(ID) %>%
+  mutate(contador = cumsum(conteo))
+  
+
+binaryPlot <- dataCosecha_V %>%
+  separate(ID, sep= "_", into = c("Farm", "ID"), remove = T) %>%
+  ggplot(aes(x= contador , y= ID, fill= as.factor(state)))+
+  geom_tile(col= "white")+
+  facet_wrap(~Farm, scales= "free_y")+
+  scale_fill_manual(values= groupColors2)+
+  theme_bw()
+  
+dataStates <- dataCosecha_V %>%
+  group_by(ID, state)%>%
+  summarise(numStates = sum(conteo)) 
+
+dataStates <- dataStates %>%
+  ungroup()%>%  #no entiendo que estaba agrupado, supongo que el ID con el state...
+  complete(ID, state)
+
+dataStates$numStates[is.na(dataStates$numStates)] <- 0 
+
+
+###AQUI MEQEUDEEEEEE FALTA HACER LA GRAFICA DE PORCENTAJE; VS FINCA; VS LONGITUD DE RECPRRIDO Y YA
+
+
 ```
+
+```{r echo=FALSE, fig.cap="DDAII7)", message=FALSE}
+binaryPlot
+
+```
+
+
+
 refe:
 
 which in a very effective way considers all possible state sequences that might have given rise to the observed time series, exploiting the dependence structure of the model. (In fact, the availability of this and other recursion techniques is probably the key reason for the popularity of HMMs.) This makes numerical maximization of the (log-)likelihood, and hence maximum likelihood estimation, feasible in most cases. For a fitted model, one can easily obtain the most likely sequence of states and also examine various variables of interest such as the average rate of movement in each state. For a comprehensive account of the HMM machinery, we recommend Zucchini, MacDonald & Langrock (2016).
