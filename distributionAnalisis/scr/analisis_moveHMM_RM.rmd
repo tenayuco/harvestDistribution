@@ -416,6 +416,8 @@ dataCosecha_V <- dataCosecha_V %>%
   mutate(contador = cumsum(conteo))
   
 
+write.csv(dataCosecha_V, "../data/datosParaFiguras.csv")
+
 binaryPlot <- dataCosecha_V %>%
   separate(ID, sep= "_", into = c("Farm", "ID"), remove = T) %>%
   ggplot(aes(x= contador , y= ID, fill= as.factor(state)))+
