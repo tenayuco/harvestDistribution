@@ -171,7 +171,8 @@ HIST_ST1 <- dataStates %>%
 
 FIG_STATES <- binaryPlot + HIST_ST1 + plot_layout(widths = c(2, 1))
 
-ggsave(FIG_STATES, filename= "../output/finalFigures/figStates_.png", height = 6, width = 12, device = "png")
+#ggsave(FIG_STATES, filename= "../output/finalFigures/figStates_.png", height = 6, width = 12, device = "png")
+ggsave(FIG_STATES, filename= "../output/finalFigures/figStates_.pdf", height = 6, width = 12, device = "pdf")
 
 
 
