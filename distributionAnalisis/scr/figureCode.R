@@ -1,5 +1,6 @@
 ### este va a ser el script para generar el output de las figuras finales
 
+library(patchwork)
 library(ggplot2)
 library(dplyr)
 library(tidyverse)
@@ -61,7 +62,8 @@ FIG_MAP_GAMMA<- DF_HARVEST_GAMMA %>%
   scale_color_manual(values= mycolsStates)+
   facet_wrap(~Finca_ID, ncol = 3)+
   theme_bw()+
-  theme(strip.background = element_blank(), panel.spacing = unit(0.8, "lines"), text = element_text(size = 15))+
+  theme(strip.background =element_rect(fill="white"))+
+  #theme(strip.background = element_blank(), panel.spacing = unit(0.8, "lines"), text = element_text(size = 15))+
   labs(x= "X", y= "Y", col= "State", fill= "")
 
 
@@ -69,7 +71,25 @@ FIG_MAP_GAMMA<- DF_HARVEST_GAMMA %>%
 ggsave(FIG_MAP_GAMMA, filename= "../output/finalFigures/mapHarvest_.png", height = 12, width = 10, device = "png")
 
 
-#ggsave("../output/finalFigures/mapHarvest_.png", height = 8, width = 12, device = "png")
+##########################333
+
+
+binaryPlot <- DF_HARVEST_GAMMA %>%
+  ggplot(aes(x= contador , y= ID_POR_FINCA, fill= as.factor(state)))+
+  geom_tile(col= "black")+
+  facet_wrap(~Finca, scales= "free_y", ncol= 1)+
+  scale_fill_manual(values= c("#FFFFFF", "black"))+
+  scale_y_continuous(breaks=seq(1,6,1))+
+  theme_bw()+
+  theme(strip.background =element_rect(fill="white"))+
+  labs(x= "Steps", y= "ID", fill= "State", shape= "State")
+
+
+###############################33333
+
+
+
+
 
 X= seq(1, 120, 1)
 
@@ -95,9 +115,16 @@ DIS_PLOT<- ggplot() +
   theme_bw()+
   labs(x= "Step size (in m)", y= "Probability Density Function", col= "State")
 
+
+
 #ggsave(DIS_PLOT, filename= "/home/emilio/archivosTrabajandose/harvestDistribution/distributionAnalisis/output/finalFigures/histoGAMMA.png", height = 6, width = 6, device = "png")
 
-ggsave(DIS_PLOT, filename= "../output/finalFigures/histoGAMMA.png", height = 6, width = 6, device = "png")
+
+
+ggsave(DIS_PLOT, filename= "../output/finalFigures/histoGAMMA.png", height = 6, width = 10, device = "png")
+
+
+
 
 
 ##############################################################333
@@ -134,10 +161,19 @@ HIST_ST1 <- dataStates %>%
   geom_segment(aes(x= 0, xend= 3, y=3.8, yend= 3.8), linetype= 2)+
   scale_fill_manual(values= c("#AAAAAA", "white"))+
   theme_bw()+
-  labs(x= "Farm", y= "% of steps in State 2", fill= "Farm")
+  labs(x= "Farm", y= "Percentage of steps in State 2", fill= "Farm")
 
 #ggsave(HIST_ST1, filename= "/home/emilio/archivosTrabajandose/harvestDistribution/distributionAnalisis/output/finalFigures/histoFARM.png", height = 6, width = 6, device = "png")
-ggsave(HIST_ST1, filename= "../output/finalFigures/histoFARM.png", height = 6, width = 5, device = "png")
+#ggsave(HIST_ST1, filename= "../output/finalFigures/histoFARM.png", height = 6, width = 5, device = "png")
+
+
+
+
+FIG_STATES <- binaryPlot + HIST_ST1 + plot_layout(widths = c(2, 1))
+
+ggsave(FIG_STATES, filename= "../output/finalFigures/figStates_.png", height = 6, width = 12, device = "png")
+
+
 
 
 #############3prueba de medias
