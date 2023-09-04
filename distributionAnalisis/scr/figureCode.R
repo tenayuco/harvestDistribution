@@ -64,7 +64,7 @@ FIG_MAP_GAMMA<- DF_HARVEST_GAMMA %>%
   theme_bw()+
   theme(strip.background =element_rect(fill="white"))+
   #theme(strip.background = element_blank(), panel.spacing = unit(0.8, "lines"), text = element_text(size = 15))+
-  labs(x= "X", y= "Y", col= "State", fill= "")
+  labs(x= "X (in m)", y= "Y (in m)", col= "State", fill= "")
 
 
 #ggsave(FIG_MAP_GAMMA, filename= "/home/emilio/archivosTrabajandose/harvestDistribution/distributionAnalisis/output/finalFigures/mapHarvest_.png", height = 12, width = 10, device = "png")
@@ -113,7 +113,7 @@ DIS_PLOT<- ggplot() +
                        mycolsStates)+
   #theme(panel.background = element_blank())+
   theme_bw()+
-  labs(x= "Step size (in m)", y= "Probability Density Function", col= "State")
+  labs(x= "Step length (in m)", y= "Frecuency", col= "State")
 
 
 
@@ -161,7 +161,7 @@ HIST_ST1 <- dataStates %>%
   geom_segment(aes(x= 0, xend= 3, y=3.8, yend= 3.8), linetype= 2)+
   scale_fill_manual(values= c("#AAAAAA", "white"))+
   theme_bw()+
-  labs(x= "Farm", y= "Percentage of steps in State 2", fill= "Farm")
+  labs(x= "Farm", y= "Percentage of steps in state 2", fill= "Farm")
 
 #ggsave(HIST_ST1, filename= "/home/emilio/archivosTrabajandose/harvestDistribution/distributionAnalisis/output/finalFigures/histoFARM.png", height = 6, width = 6, device = "png")
 #ggsave(HIST_ST1, filename= "../output/finalFigures/histoFARM.png", height = 6, width = 5, device = "png")
