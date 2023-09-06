@@ -62,6 +62,7 @@ FIG_MAP_GAMMA<- DF_HARVEST_GAMMA %>%
   scale_color_manual(values= mycolsStates)+
   facet_wrap(~Finca_ID, ncol = 3)+
   theme_bw()+
+  theme(text = element_text(size = 15))+
   theme(strip.background =element_rect(fill="white"))+
   #theme(strip.background = element_blank(), panel.spacing = unit(0.8, "lines"), text = element_text(size = 15))+
   labs(x= "X (in m)", y= "Y (in m)", col= "State", fill= "")
@@ -82,6 +83,7 @@ binaryPlot <- DF_HARVEST_GAMMA %>%
   scale_y_continuous(breaks=seq(1,6,1))+
   theme_bw()+
   theme(strip.background =element_rect(fill="white"))+
+  theme(text = element_text(size = 20))+
   labs(x= "Steps", y= "ID", fill= "State", shape= "State")
 
 
@@ -111,8 +113,8 @@ DIS_PLOT<- ggplot() +
   geom_line(data = DF_DISTRI, size= 0.8, aes(x= X, y= PDF, col= as.factor(state)))+
   scale_color_manual(values = 
                        mycolsStates)+
-  #theme(panel.background = element_blank())+
   theme_bw()+
+  theme(text = element_text(size = 20))+
   labs(x= "Step length (in m)", y= "Frecuency", col= "State")
 
 
@@ -161,6 +163,7 @@ HIST_ST1 <- dataStates %>%
   geom_segment(aes(x= 0, xend= 3, y=3.8, yend= 3.8), linetype= 2)+
   scale_fill_manual(values= c("#AAAAAA", "white"))+
   theme_bw()+
+  theme(text = element_text(size = 20))+
   labs(x= "Farm", y= "Percentage of steps in state 2", fill= "Farm")
 
 #ggsave(HIST_ST1, filename= "/home/emilio/archivosTrabajandose/harvestDistribution/distributionAnalisis/output/finalFigures/histoFARM.png", height = 6, width = 6, device = "png")
