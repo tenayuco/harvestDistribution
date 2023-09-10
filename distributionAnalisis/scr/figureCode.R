@@ -69,7 +69,7 @@ FIG_MAP_GAMMA<- DF_HARVEST_GAMMA %>%
 
 
 #ggsave(FIG_MAP_GAMMA, filename= "/home/emilio/archivosTrabajandose/harvestDistribution/distributionAnalisis/output/finalFigures/mapHarvest_.png", height = 12, width = 10, device = "png")
-ggsave(FIG_MAP_GAMMA, filename= "../output/finalFigures/mapHarvest_.png", height = 12, width = 10, device = "png")
+ggsave(FIG_MAP_GAMMA, filename= "../output/finalFigures/mapHarvest_.png", height = 14, width = 12, device = "png")
 
 
 ##########################333
