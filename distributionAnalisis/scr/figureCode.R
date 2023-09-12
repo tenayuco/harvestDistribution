@@ -52,6 +52,18 @@ rm(DF_HARVEST_GAMMA_H)
 #ahora estan umberados del 1 al 6 dentro de cada finca
 #codesnames
 
+#cambiams por E de ecolo
+DF_HARVEST_GAMMA$Finca[DF_HARVEST_GAMMA$Finca== "H"] <- "C"
+DF_HARVEST_GAMMA$Finca[DF_HARVEST_GAMMA$Finca== "I"] <- "E"
+
+DF_HARVEST_RESUMEN <- DF_HARVEST_GAMMA %>%
+  group_by(Finca, ID_POR_FINCA)%>%
+  summarise(observation = sum(conteo)) %>%
+  unite("Finca_ID", c(Finca, ID_POR_FINCA))
+
+#aqui agrego el num de observaciones por categoria
+DF_HARVEST_GAMMA <- merge(DF_HARVEST_GAMMA, DF_HARVEST_RESUMEN)
+
 
 
 FIG_MAP_GAMMA<- DF_HARVEST_GAMMA %>% 
@@ -61,6 +73,8 @@ FIG_MAP_GAMMA<- DF_HARVEST_GAMMA %>%
   geom_point(size=1, aes(fill= "Tree"))+ # es importante que sea path, porque así lo hace según coo estan ordenados los
   scale_color_manual(values= mycolsStates)+
   facet_wrap(~Finca_ID, ncol = 3)+
+  geom_text(x = 140, y = 10, aes(label = observation), data = DF_HARVEST_RESUMEN)+
+  geom_text(x = 125, y = 10, label= "N =")+
   theme_bw()+
   theme(text = element_text(size = 15))+
   theme(strip.background =element_rect(fill="white"))+
