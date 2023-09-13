@@ -119,6 +119,17 @@ DF_gamma_st2 <- data.frame("distribution"= c("gamma"), "state" = 2, "X"= X,  "PD
 DF_DISTRI <- rbind(DF_gamma_st1, DF_gamma_st2)
 DF_DISTRI$logPDF <- log(DF_DISTRI$PDF)
 
+
+CAJADIST <- DF_HARVEST_GAMMA %>%
+  ggplot()+
+  geom_boxplot(aes(x= step), fill= "#EEEEEE")+ 
+  theme_bw()+
+  theme(text = element_text(size = 20))+ 
+  theme(axis.ticks.y = element_blank(),
+        axis.text.y = element_blank())+
+  labs(x= "Step length (in m)", y= "")
+
+
 DIS_PLOT<- ggplot() +
   geom_histogram(data= DF_HARVEST_GAMMA, size= 0.2, 
                  aes(x= as.numeric(step), 
@@ -131,13 +142,15 @@ DIS_PLOT<- ggplot() +
   theme(text = element_text(size = 20))+
   labs(x= "Step length (in m)", y= "Frecuency", col= "State")
 
+DIS_PLOT_COM <- DIS_PLOT + annotation_custom(ggplotGrob(CAJADIST), xmin = 15, xmax = 100, ymin = 0.1, ymax = 0.2)
+
 
 
 #ggsave(DIS_PLOT, filename= "/home/emilio/archivosTrabajandose/harvestDistribution/distributionAnalisis/output/finalFigures/histoGAMMA.png", height = 6, width = 6, device = "png")
 
 
 
-ggsave(DIS_PLOT, filename= "../output/finalFigures/histoGAMMA.png", height = 6, width = 10, device = "png")
+ggsave(DIS_PLOT_COM, filename= "../output/finalFigures/histoGAMMA.png", height = 6, width = 10, device = "png")
 
 
 
@@ -192,7 +205,19 @@ FIG_STATES <- binaryPlot + HIST_ST1 + plot_layout(widths = c(2, 1))
 ggsave(FIG_STATES, filename= "../output/finalFigures/figStates_.pdf", height = 6, width = 12, device = "pdf")
 
 
+###esto para medidas por state
 
+#dataState1 <- DF_HARVEST_GAMMA %>% filter(state ==1)
+#> View(dataState1)
+#> max(dataState1$step)
+#[1] 13.41641
+#> dataState2 <- DF_HARVEST_GAMMA %>% filter(state ==2)
+#> max(dataState2$step)
+#[1] 117.0171
+#> min(dataState2$step)
+#[1] 6.082763
+#> min(dataState1$step)
+#> dim(dataState1)[1]/dim(DF_HARVEST_GAMMA)[1]
 
 #############3prueba de medias
 
