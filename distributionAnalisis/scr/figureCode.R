@@ -228,3 +228,29 @@ ggsave(FIG_STATES, filename= "../output/finalFigures/figStates_.pdf", height = 6
 #shapiro.test(dataStates_H$percentage_ST2)
 
 #t.test(dataStates_I$percentage_ST2, dataStates_H$percentage_ST2)
+
+#####Para hacer conteo 
+
+
+FIG_MAP_CONTEO<- DF_HARVEST_GAMMA %>% 
+  unite("Finca_ID", c(Finca, ID_POR_FINCA)) %>% 
+  ggplot(aes(x= x, y = y)) +
+  geom_path(aes(col= as.factor(state)), size= 0.5)+
+  geom_point(size=0.5, aes(fill= "Tree"))+ # es importante que sea path, porque así lo hace según coo estan ordenados los
+  scale_color_manual(values= mycolsStates)+
+  facet_wrap(~Finca_ID, ncol = 3)+
+  geom_text(x = 140, y = 10, aes(label = observation), data = DF_HARVEST_RESUMEN)+
+  geom_text(x = 125, y = 10, label= "N =")+
+  theme_bw()+
+  theme(text = element_text(size = 15))+
+  theme(strip.background =element_rect(fill="white"))+
+  scale_y_continuous(breaks = seq(0, 120, by = 10))+
+  scale_x_continuous(breaks = seq(0, 150, by = 10))+
+  theme(panel.grid.major = element_line(color = "red",
+                                        size = 0.5,
+                                        linetype = 1))+
+  #theme(strip.background = element_blank(), panel.spacing = unit(0.8, "lines"), text = element_text(size = 15))+
+  labs(x= "X (in m)", y= "Y (in m)", col= "State", fill= "")
+
+ggsave(FIG_MAP_CONTEO, filename= "../output/finalFigures/mapCONTEO_.png", height = 14, width = 12, device = "png")
+
