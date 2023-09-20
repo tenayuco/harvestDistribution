@@ -9,7 +9,7 @@ bibliography: movehmm.bib
 
 ## 0. Introduction to HMM
 
-Hidden Markov models (HMMs) are models in which the distribution that generates an observation $Z_t$ depends on the state $S_t$ of an underlying and unobserved Markov process (Fig.1) [@zucchini2016hidden]. In this sense, the observations $Z_t$ can be retrieved from one to multiple distributions related to the number of states. In the context of animal movement, the state $S_t$ is interpreted as a proxy for the behavioral state of the animal (e.g. foraging, exploring; [@michelot2019movehmm]). The observations $Zt$ are bivariate time series ($Zt = (l_t, \phi_t)$) where $l_t$ is the step length (the Euclidean distance) and $\phi_t$ the turning angle, between two succesive locations [@michelot2019movehmm, @zucchini2016hidden]. Biologically speaking, these models try to include the process where the movement of agents (e.g. short or large steps) depends on its behavior. With these models, we can define the different originary distributions and then decode the most likely sequence of states along the trajectory of an agent, its average time within a state, and the number of switches between states.  
+Hidden Markov models (HMMs) are models in which the distribution that generates an observation $Z_t$ depends on the state $S_t$ of an underlying and unobserved Markov process (Fig.1) [@zucchini2016hidden]. In this sense, the observations $Z_t$ can be retrieved from one to multiple distributions related to the number of states. In the context of animal movement, the state $S_t$ is interpreted as a proxy for the behavioral state of the animal (e.g. foraging, exploring; [@michelot2016movehmm]). The observations $Zt$ are bivariate time series ($Zt = (l_t, \phi_t)$) where $l_t$ is the step length (the Euclidean distance) and $\phi_t$ the turning angle, between two succesive locations [@michelot2019movehmm, @zucchini2016hidden]. Biologically speaking, these models try to include the process where the movement of agents (e.g. short or large steps) depends on its behavior. With these models, we can define the different originary distributions and then decode the most likely sequence of states along the trajectory of an agent, its average time within a state, and the number of switches between states.  
 
 ![Process generating the observations in a two-state HMM. The chain followed the path 2, 1, 1, 1, 2, 1, as indicated on the left. The corresponding state-dependent distributions are shown in the middle. The observations are generated from the corresponding active distributions. Taken from (Zucchini, 2016)](hmmFullfigure.png){width=50%}
 
@@ -40,20 +40,23 @@ mycols3c <-c("#759580", "#1b4a64")
 
 
 ```{r, echo=FALSE, message=FALSE}
+
+#load the data
 WP_COSECHA_UTM_SP <- read.csv("../data/cleanData_wayPointsCoffee_UTM.csv", stringsAsFactors = FALSE )
 
+#punctual modifications
 WP_COSECHA_UTM_SP <- WP_COSECHA_UTM_SP %>%
   mutate(finca = replace(finca, finca == "Ecological", "E")) %>%
   mutate(finca = replace(finca, finca == "Conventional", "C"))
 
+#normalization of UTM
 WP_COSECHA_UTM_SP <- WP_COSECHA_UTM_SP %>% rowwise() %>% 
-  group_by(finca, ID_POR_FINCA, pante)%>%  #esto debe seguirse con lo de aajo
+  group_by(finca, ID_POR_FINCA, pante)%>% 
   mutate(xNorm = x_UTM - min(x_UTM)) %>%
   mutate(yNorm = y_UTM - min(y_UTM))
 
 #now the precision (not the accuracy) of the GPS goes to 5 decimal points (lat y lot) and this is equivalent to ~1m
 #so we can round the xNorm and y yNorm
-
 WP_COSECHA_UTM_SP$xNorm <- round(WP_COSECHA_UTM_SP$xNorm, 0)
 WP_COSECHA_UTM_SP$yNorm <- round(WP_COSECHA_UTM_SP$yNorm, 0)
 
@@ -66,30 +69,27 @@ WP_COSECHA_UTM_SP <- WP_COSECHA_UTM_SP %>%
 WP_COSECHA_UTM_SP_PRE <- WP_COSECHA_UTM_SP %>%
   dplyr::select("ID" = Finca_ID, xNorm, yNorm)
 
+#we remove the pante information as it is not relevant for the analysis
 WP_COSECHA_UTM_SP_PRE$pante <- NULL
 ```
 
-```{r echo=FALSE, warning=FALSE, fig.cap= "12 trajectories of harvesters. The green line represent the Conventional Farm (C) and the blue line the Ecological Farm (E). Each black dot represent a tree" , fig.height= 12, fig.width=10}
-
-
-
-
+```{r echo=FALSE, warning=FALSE, fig.cap= "12 trajectories of harvesters for both farms (E: Ecological, C: conventional). Each green dot represent a tree" , fig.height= 12, fig.width=10}
 
 mapHarvest_total<- WP_COSECHA_UTM_SP_PRE %>% 
   ggplot(aes(x= xNorm, y = yNorm)) +
   geom_path(aes(), size= 1)+
-  geom_point(size=1)+ # es importante que sea path, porque así lo hace según coo estan ordenados los
+  geom_point(size=1, col= "black", shape= 21,fill= "darkgreen")+ 
   scale_color_manual(values= mycols3c)+
   facet_wrap(~ ID, ncol=3)+
   theme(panel.spacing = unit(0.8, "lines"), text = element_text(size = 15))+
   theme_bw()+
   labs(x= "X", y= "Y", col= "Farm")
 
-#ggsave("../output/mapHarvest_I.png", height = 8, width = 12, device = "png")
-
 mapHarvest_total
 ```
 ```{r, echo=FALSE}
+#  we create the movehmm object
+
 dataCosecha <- prepData(WP_COSECHA_UTM_SP_PRE, type= "UTM", coordNames = c("xNorm", "yNorm"))
 
 #we remove the steps equal to zero (when the worker harvest 2 trees separated by less than a meter..)
@@ -99,7 +99,7 @@ dataCosecha <- dataCosecha %>%
 summary(dataCosecha)
 ```
 
-A first assumption for the analysis was made: we took these time irregular trajectories (where each point represents one different tree, but where the time between two trees is variable) and treated them as a regular trajectories. This aimed to analyze the change in the movement of the workers during a day, generated by the underlying pattern of trees or by the differences in the fruit charge and ripening synchronicity. We convert this database into a movehmm object where the step distance $l_t$ and the relative angle $\phi_t$ between the $(x, y)$ coordinates is calculated (table 1). Now, for the following analysis, we only took the step distance and treated both farms as one. We decided to exclude the angles because they didn't have a biological meaning for irregular trajectories. The input for the analysis is then the histogram presented in Fig. 3. The values of the steps lengths ranges from 1 to 117, with a mean of 5.14 and a median equal to 4. 
+A first assumption for the analysis was made: we took these time irregular trajectories (where each point represents one different tree, but where the time between two trees is variable) and treated them as a regular trajectories. This aimed to analyze the change in the movement of the workers during a day, generated by the underlying pattern of trees or by the differences in the fruit charge and ripening synchronicity. We convert this database into a _movehmm_ object where the step distance $l_t$ and the relative angle $\phi_t$ between the $(x, y)$ coordinates is calculated (table 1). Now, for the following analysis, we only took the step distance and treated both farms as one. We decided to exclude the angles because they didn't have a biological meaning for irregular trajectories. The input for the analysis is then the histogram presented in Fig. 3. The values of the steps lengths ranges from 1 to 117, with a mean of 5.14 and a median equal to 4. 
 
 ```{r include=FALSE}
 summary(dataCosecha$step)
@@ -113,7 +113,7 @@ kable(head(dataCosecha), caption = "First lines of the movehmm object with harve
 
 
 
-```{r echo=FALSE, warning=FALSE, fig.cap= "Histogram of the steps lengths divided by the different trajectories.", fig.height= 6, fig.width=10}
+```{r echo=FALSE, warning=FALSE, fig.cap= "Histogram of the steps lengths divided by the different trajectories.", fig.height= 3, fig.width=5}
 pHisto_step_general <-dataCosecha %>%
   ggplot(aes(x= as.numeric(step), y=(..count..)/tapply(..count..,..PANEL..,sum)[..PANEL..])) +
   geom_histogram(binwidth=2, color= "black", aes(fill=as.character(ID))) +
@@ -129,7 +129,6 @@ pHisto_step_general
 
 ### 1.2. Fitting of the data
 
-
 The algorithm of the _movehmm_ library uses:
 
 a) a predefined number of states. Here we will use two. But the algorithm also explores the case when both states are equal. 
@@ -140,9 +139,7 @@ c) prior parameters for each of the distributions, for each state.
 
 d) The observations (step-lengths) (the data of harvesters)
 
-With these inputs, the algorithm extracts the most likely two-state-distributions with their respective parameters (within the predefined family of distributions) from the data. During the fitting process, the algorithm uses the maximum-log likelihood and the _forward algorithm_ (a recursive algorithm starting with the prior distributions; [@zucchini2016hidden]).
-
-We ran a loop to fit the data to two different families (_weibull_, and _gamma_) and in order to avoid local maximal likelihoods, we swapped 1000 combinations across a range of prior parameters for each model [@michelot2019movehmm]. For the _gamma_ distribution, the minimum and maximum values of each range were chosen to encompass the full distribution (including values below and over the mean). For the _weibull_ distribution, the maximum shape considered the left-skew shape and the scale was chosen to include the 120m long steps (see the ranges in table 2). Many of these combinations of prior parameters converged to the same final distributions.  
+With these inputs, the algorithm extracts the most likely two-state-distributions with their respective parameters (within the predefined family of distributions) from the data. During the fitting process, the algorithm uses the maximum-log likelihood and the _forward algorithm_ (a recursive algorithm starting with the prior distributions; [@zucchini2016hidden]). We ran a loop to fit the data to two different families (_weibull_, and _gamma_) and in order to avoid local maximal likelihoods, we swapped 1000 combinations across a range of prior parameters for each model [@michelot2019movehmm]. For the _gamma_ distribution, the minimum and maximum values of each range were chosen to encompass the full distribution (including values below and over the mean). For the _weibull_ distribution, the maximum shape considered the left-skew shape and the scale was chosen to include the 120m long steps (see the ranges in table 2). Many of these combinations of prior parameters converged to the same final distributions.  
 
 ```{r, echo=FALSE}
 rangosDist <- list("gamma" = list("mean" = c(0.1, 20), "sd" = c(0.1,20)), 
@@ -156,6 +153,9 @@ kable(DF_rangos, caption = "Minimun and maximum values of the prior parameters f
 
 
 ```{r, echo=FALSE}
+
+#his chunks runs the model. Here it is inactivated
+#but we can activate it with runModel <- yes. But for now, we load the result in the following chunk
 DF_TOTAL <- data.frame("model"= 0, 
             "prior_par0_st1_st2"= 0,
             "prior_par1_st1_st2" = 0,
@@ -223,9 +223,11 @@ DF_TOTAL <- DF_TOTAL%>%
 
 
 ```{r, echo=FALSE}
+
+#here we load the simulation with the 1000 combinations
 DF_TOTAL_1000 <- read.csv("../output/wholeTable_1000_rep_0_20.csv")
 
-
+#we remove the lnorm as we will not use it
 DF_TOTAL_1000 <- DF_TOTAL_1000 %>%
   filter(model != "lnorm") %>%
   separate(prior_par0_st1_st2, c("pr_par0_st1", "pr_par0_st2"), sep= "_", remove = TRUE) %>%
@@ -242,7 +244,7 @@ DF_TOTAL_1000[,seq(2,11,1)] <- round(DF_TOTAL_1000[,seq(2,11,1)], 2)
 
 
 ```{r, echo=FALSE}
-#here we have the outiers that were removed
+#here we have the outiers that were removed, beacuse the show no variance
 DF_1000_OUTLIERS <- DF_TOTAL_1000 %>%
   filter(st1_par1 <0.00001 | st2_par1 <0.00001)
 
@@ -253,13 +255,15 @@ DF_1000_OUTLIERS <- DF_1000_OUTLIERS %>%
 ```
 
 ```{r, echo=FALSE}
+
+#the new data frame will not have the outliers
 DF_1000_SIN <- DF_TOTAL_1000 %>%
   filter(st1_par1 >0.00001 & st2_par1 >0.00001)
-
-#DF_1000_SIN$Y_st1_par0 <- DF_1000_SIN$st1_par0
 ```
 
 ```{r, echo=FALSE}
+
+#these chunks are a punctual procedure to remove the extremely big means (that are bigger than the range explored. This is not relevant since these values at maximal AIC and woulb be removed anyway.)
 DF_1000_SIN_G <- DF_1000_SIN %>%
   filter(model == "gamma" )%>%
   filter(st1_par0 <DF_rangos$gamma.mean[2])%>%
@@ -274,7 +278,7 @@ DF_1000_SIN_W <- DF_1000_SIN %>%
  filter(st1_par1 <DF_rangos$weibull.scale[2])%>%
  filter(st2_par1 <DF_rangos$weibull.scale[2])
 
-####AQUI PASAMOS LOS DATOS A MEANS PARA WEIBULL
+####Here we change the shape and scale to mean and std for the weibull distribution
 DF_1000_SIN_W_TEMP <- DF_1000_SIN_W
 
 DF_1000_SIN_W_TEMP$st1_par0 <- DF_1000_SIN_W$st1_par0*DF_1000_SIN_W$st1_par1
@@ -289,7 +293,9 @@ DF_1000_SIN_LIMIT <- rbind(DF_1000_SIN_G, DF_1000_SIN_W)
 rm(DF_1000_SIN_G, DF_1000_SIN_W, DF_1000_SIN_W_TEMP)
 ```
 
-Some combinations resulted in distributions with zero variance. We decided to remove those cases as they did not make any biological sense. We then plotted the minimum negative log of the likelihood without these outliers (Fig.4). The minimum negative log-likelihood is equivalent to the maximum likelihood [@zucchini2016hidden]. Almost all the combinations of prior parameters converge to two models with equivalent minimum likelihood for both distributions (Fig. 4). In this sense, the parameters of the models with minimal likelihoods are robust to the initial parameters. 
+Some combinations resulted in distributions with zero variance. We decided to remove those cases as they did not make any biological sense. We also removed states with means higher than the ranges, for visualization (this does not change the results as they had maximal AIC that would be removed anyways). We then plotted the minimum negative log of the likelihood without these outliers (Fig.4). The minimum negative log-likelihood is equivalent to the maximum likelihood [@zucchini2016hidden]. Almost all the combinations of prior parameters converge to two models with equivalent minimum likelihood for both distributions (Fig. 4). In this sense, the parameters of the models with minimal likelihoods are robust to the initial parameters. In particular gamma distribution resulted in models with a lower min neg likelihood (and lower AIC as show in table 3.)
+
+We also explored the differences in the estimated parameters between the resulting states and their AIC. This corroborates that the models with the minimal AIC truly represented two-states models for both distributions, and have a lower AIC than one state models (Fig. 5). For each family of distributions we picked the model that had the minimum AIC value (table 3 and one of the purple dots in Fig. 5). 
 
 
 
@@ -307,10 +313,9 @@ FIG_MIN_LIKE <- DF_1000_SIN_LIMIT %>%
 FIG_MIN_LIKE
 ```
 
-We also explored the differences in the estimated parameters between the resulting states and their AIC. This corroborates that the models with the minimal AIC truly represented two-states models for both distributions, and have a lower AIC than one state models (Fig. 5). For each family of distributions we picked the model that had the minimum AIC value (table 3 and one of the purple dots in Fig. 5). 
 
 
-```{r, fig.cap= "Parameters space for both states for each of the distributions. The (x,y) coordinate of each dot represent the mean and the horizontal and vertical errorbar the standard deviation, of state 1 and state 2, respectively. The dotted line represent the identity, where both states are equivalent. The color represent the AIC value, where gray values show infinitely big values. The purple dots represent the minimal AIC", echo=FALSE, fig.height= 4, fig.width=9}
+```{r, fig.cap= "Parameters space for both states for each of the distributions. The (x,y) coordinate of each dot represent the mean of state 1 and 2, and the horizontal and vertical errorbar their standard deviation. The dotted line represent the identity, where both states are equivalent. The color represent the AIC value, where gray values show infinitely big values. The purple dots represent the minimal AIC", echo=FALSE, fig.height= 4, fig.width=9}
 
 FIG_PARA <- DF_1000_SIN_LIMIT %>% 
   #filter(AIC_model != "Inf")%>% 
@@ -337,6 +342,8 @@ FIG_PARA
 
 
 ```{r, echo=FALSE}
+
+#here we extract the values with minimal AIC for both distributions 
 DF_TOTAL_MIN <- DF_1000_SIN_LIMIT %>%
   group_by(model)%>%
   filter(AIC_model == min(AIC_model)) %>%
@@ -361,14 +368,13 @@ kable(DF_TOTAL_MIN_SHOW, caption = "Best models for each of the distributions. W
 
 ## 2. Description of the states, for each studied distribution.
 
-
-We plotted the two state distributions for _gamma_ and _weibull_ families with the obtained parameters (see figure. 7 and table 4 for the final parameters). For both families, one of the states produced a distribution that encompass all highly frequent short steps and falls abruptly for size steps bigger than 13 m. The other state generates a long tailed distribution with a lower probability of short steps (compared to the other distribution) and a non zero probability for steps bigger than 13 m (Fig. 7 and table 4).
+We plotted the two state distributions for _gamma_ and _weibull_ families with the obtained final parameters (see figure. 6 and table 4). For both families, one of the states produced a distribution that encompass most of the highly frequent short steps and falls abruptly for size steps bigger than 13 m. The other state generates a long tailed distribution with a lower probability of short steps (compared to the other distribution) and a non zero probability for steps bigger than 13 m (Fig. 6 and table 4). This results show that from the movement of the harvesters (observations $Z_t$) we can extract two hidden markov states ($S_t$). The first state generate distributions with short steps (we can interpret this as harvesting the closest tree) and the second state generate longer steps (when the worker has to move to another part of the plot). This second state is highly unlikely (3.7% of steps in gamma distribution, 5.2% for weibull). Now, for the following analysis, we took only the gamma distribution as it presented a lower AIC.
 
 
 ```{r echo=FALSE}
 finalParameters <- read.csv("./tableParameters.csv")
-finalParameters[,2] <- round(finalParameters[,2],2)
-finalParameters[,3] <- round(finalParameters[,3],2)
+finalParameters[,c(2,3)]<- round(finalParameters[,c(2,3)],2)
+#finalParameters[,3] <- round(finalParameters[,3],2)
 
 kable(finalParameters, caption = "Final parameters for both gamma and weibull distributions. For the gamma distribution $\\alpha = \\mu^2/\\sigma^2$; $\\beta = \\mu/\\sigma^2$; $\\theta = 1/\\beta$.")
 
@@ -378,6 +384,7 @@ kable(finalParameters, caption = "Final parameters for both gamma and weibull di
 
 ```{r echo=FALSE}
 
+#here we generate the distributions with the obtained parameters 
 X= seq(1, 120, 1)
 
 DF_weibull_st1 <- data.frame("distribution"= c("weibull"), "state" = 1, "X"= X,  "PDF" = dweibull(X, shape= 2.05, scale= 4.71))
@@ -392,6 +399,7 @@ DF_gamma_st2 <- data.frame("distribution"= c("gamma"), "state" = 2, "X"= X,  "PD
 DF_DISTRI <- rbind(DF_weibull_st1, DF_weibull_st2, DF_gamma_st1, DF_gamma_st2)
 ```
 
+\newpage
 
 ```{r echo=FALSE, warning=FALSE, fig.cap= "Two state model distributions. The used parameters are shown in Table 4", fig.height= 5, fig.width=10, message=FALSE}
 
@@ -407,9 +415,6 @@ geom_line(data = DF_DISTRI, size= 1, aes(x= X, y= PDF, col= as.factor(state)))+
 DIS_PLOT
 
 ```
-
-This results show that from the movement of the harvesters (observations $Z_t$) we can extract two hidden markov states ($S_t$). The first state generate distributions with short steps (we can interpret this as harvesting the closest tree) and the second state generate longer steps (when the worker has to move to another part of the plot). This second state is highly unlikely (3.7% of steps in gamma distribution, 5.2% for weibull) (see Fig. 8 to exemplify the sequence of states in two trajectories). Now, for the following analysis, we took only the gamma distribution as it presented a lower AIC.  
-
 
 
 ```{r, echo=FALSE, message=FALSE}
@@ -429,7 +434,7 @@ for (i in seq(1,dim(DF_TOTAL_MIN)[1],1)){
 ```
 
 
-```{r echo=FALSE, fig.cap="Distribution of states $St$ along two trajectories. Each color follow the code of colors of Fig.7)", fig.keep=c(3,4), fig.show='hold', message=FALSE, out.width="50%"}
+```{r echo=FALSE, fig.cap="Distribution of states $St$ along two trajectories. Each color follow the code of colors of Fig.6 for the gamma distribution)", fig.keep=c(3,4), fig.show='hold', message=FALSE, out.width="50%"}
 
 #plotStates(modelos_p$gamma, ask = F, animals = c( "H_Fran9", "I_Car12"))
 
@@ -438,11 +443,16 @@ plot(modelos_p$gamma, animals = c("C_2", "E_6"), ask = F, plotTracks = TRUE, bre
 
 \newpage
 
-## 3. Probabilities of states per farm
+## 3. Sequence of states and relation with the farms.
 
-and the most likely sequence of states (assuming a markov process).
+With the Viterbi algorithm, the package _movehmm_ decodes the most likely sequence of states (assuming a markov chain) and the transitions matrix between hidden states. This takes into account the conditional probabilities between the observations and hidden states $P(Z_t|S_t))$ [@zucchini2016hidden]. In this sense, _movehmm_ can estimate the state with the highest probability for each step but this might not be the same as the state in the most probable sequence returned by the Viterbi algorithm (Fig. 8, second and third row vs first row). This is because the Viterbi algorithm performs “global decoding”, whereas the state probabilities are “local decoding”[@zucchini2016hidden, @michelot2019movehmm].
 
-We finally plotted the sequence of the most likely states along each of the trajectories (Fig. 9) and estimate the probability of the most unlikely state (state 1, that represent the relocalization of the workers in the plot) according to the farm the trajectory belonged to (Fig. 10). We note that the percentage of steps from state 1 correlates with the identity of the farm (Fig. 10): 4 out of 6 trajectories that belong to the Ecological Farm, presented a higher than the mean percentage of longer steps, compared to the Conventional Farm, where 5 out of 6 were below the mean. 
+```{r echo=FALSE, fig.cap="State probabilities for each step of E_6 trajectory and result of the Viterbi algorithm", fig.height= 4, fig.width=5, message=FALSE}
+plotStates(modelos_p$gamma, animals ="E_6", ask = F)
+```
+
+
+We finally plotted the sequence of the most likely states along each of the trajectories (Fig. 9) and estimate the probability of the most unlikely state (state 1, that represent the relocalization of the workers in the plot)- according to the farm the trajectory belonged to (Fig. 10). We note that the percentage of steps from state 1 correlates with the identity of the farm (Fig. 10): 4 out of 6 trajectories that belong to the Ecological Farm, presented a higher than the mean percentage of longer steps, compared to the Conventional Farm, where 5 out of 6 were below the mean. (__note__: in the main text the number of the states was inverted for practicality)).
 
 ```{r echo=FALSE, fig.cap="Sequence of states along the trajectory in two different farms (C: Conventional, E: Ecological)", fig.height=4, fig.width=10}
 
@@ -456,6 +466,7 @@ dataCosecha_V <- dataCosecha_V %>%
   
 
 write.csv(dataCosecha_V, "../data/analyzedData_figures.csv")
+
 
 binaryPlot <- dataCosecha_V %>%
   separate(ID, sep= "_", into = c("Farm", "ID"), remove = T) %>%
