@@ -222,6 +222,7 @@ DF_TOTAL <- DF_TOTAL%>%
 ```
 
 
+
 ```{r, echo=FALSE}
 
 #here we load the simulation with the 1000 combinations
@@ -295,8 +296,7 @@ rm(DF_1000_SIN_G, DF_1000_SIN_W, DF_1000_SIN_W_TEMP)
 
 Some combinations resulted in distributions with zero variance. We decided to remove those cases as they did not make any biological sense. We also removed states with means higher than the ranges, for visualization (this does not change the results as they had maximal AIC that would be removed anyways). We then plotted the minimum negative log of the likelihood without these outliers (Fig.4). The minimum negative log-likelihood is equivalent to the maximum likelihood [@zucchini2016hidden]. Almost all the combinations of prior parameters converge to two models with equivalent minimum likelihood for both distributions (Fig. 4). In this sense, the parameters of the models with minimal likelihoods are robust to the initial parameters. In particular gamma distribution resulted in models with a lower min neg likelihood (and lower AIC as show in table 3.)
 
-We also explored the differences in the estimated parameters between the resulting states and their AIC. This corroborates that the models with the minimal AIC truly represented two-states models for both distributions, and have a lower AIC than one state models (Fig. 5). For each family of distributions we picked the model that had the minimum AIC value (table 3 and one of the purple dots in Fig. 5). 
-
+We also explored the differences in the estimated parameters between the resulting states and their AIC. This corroborates that the models with the minimal AIC have two clearly distinct states (purples dots in Fig. 5). Besides, we ran all the analysis with one-state distributions for both families and compared them with our two-state distribution models using the minimal AIC (table 3). As we note in table 3, two-state distribution have the minimal AIC, and particularly with the gamma family. 
 
 
 ```{r, fig.cap= "Minimun Negative Log-likelihood per combination of prior parameters for two different distributions", echo=FALSE, fig.height= 3, fig.width=5}
@@ -357,12 +357,111 @@ DF_TOTAL_MIN$contador <- NULL
 
 DF_TOTAL_MIN_SHOW <- DF_TOTAL_MIN
 
-names(DF_TOTAL_MIN_SHOW) <- (c("model","pr_st1_p1", "pr_st1_p2", "pr_st2_p1", "pr_st2_p2", "minNegL", "AIC", "s1_p1", "s1_p2", "s2_p2", "s2_p2"))
+DF_TOTAL_MIN_SHOW <- cbind(States = c(2,2), DF_TOTAL_MIN_SHOW)
+
+names(DF_TOTAL_MIN_SHOW) <- (c("States", "model","pr_st1_p1", "pr_st1_p2", "pr_st2_p1", "pr_st2_p2", "minNegL", "AIC", "s1_p1", "s1_p2", "s2_p2", "s2_p2"))
 
 
-kable(DF_TOTAL_MIN_SHOW, caption = "Best models for each of the distributions. We added the prior parameters, the likelihood, AIC criteria and the final parameters. pr:prior, st1: state 1, p1: parameter 1 (shape for weibull and mean for gamma, p2: parameter 2 (scale for weibull and sd for gamma).")
 ```
 
+
+```{r, echo=FALSE}
+#one state to compare the AIC VALUES...
+#his chunks runs the model. Here it is inactivated
+#but we can activate it with runModel <- yes. But for now, we load the result in the following chunk
+
+
+ #m_cosecha_oneState<- fitHMM(data = dataCosecha, stepDist = "gamma",  
+                       #nbStates = 1 , stepPar0 = c(5, 2), angleDist = "none")
+
+
+
+DF_TOTAL_ONESTATE <- data.frame("model"= 0, 
+            "prior_par0_st1"= 0,
+            "prior_par1_st1" = 0,
+           "minNegLike" = 0,
+           "AIC_model" = 0,
+           "st1_par0"= 0,
+           "st1_par1"=0)
+
+repetitions <- seq(1, 1000,1)
+runModelSimple <- "no"
+if (runModelSimple == "yes"){
+for (modelStep in c("weibull", "gamma")){
+  print(modelStep)
+  rangePar0 <- runif(100000, rangosDist[[modelStep]][[1]][1], rangosDist[[modelStep]][[1]][2])  #corre 100000 valores en el rango del parametro 0
+  rangePar1 <- runif(100000, rangosDist[[modelStep]][[2]][1], rangosDist[[modelStep]][[2]][2]) #corre 100000 valores en el rango del parametro 1
+  for (rep in repetitions){
+    par0 <- c(sample(rangePar0,1, replace= TRUE)) # step mean (one parameters: one for each state)
+    par1 <- c(sample(rangePar1,1, replace= TRUE))
+    par0 <- round(par0, 4)
+    par1 <- round(par1, 4)
+    #print(par0)
+    #print(par1)
+    stepPar <- c(par0,par1)
+  #op1
+    tryCatch({
+    m_cosecha_oneState<- fitHMM(data = dataCosecha, stepDist = modelStep,  
+                       nbStates = 1 , stepPar0 = stepPar, angleDist = "none")
+    },
+    error=function(cond){
+      print("error de parametros")
+      print(stepPar)
+      message(cond)
+    }
+    )
+    
+    minNegLike <-  m_cosecha_oneState$mod$minimum
+    AIC_model <- AIC(m_cosecha_oneState)
+    
+    DF_TEMP_ONESTATE <- data.frame("model"= modelStep, 
+                          "prior_par0_st1"= par0[1], 
+                          "prior_par1_st1"= par1[1],
+                          "minNegLike" = minNegLike,
+                          "AIC_model" = AIC_model,
+                          "st1_par0"= m_cosecha_oneState$mle$stepPar[1],
+                          "st1_par1"= m_cosecha_oneState$mle$stepPar[2])
+    
+                      
+    DF_TOTAL_ONESTATE <- rbind(DF_TOTAL_ONESTATE, DF_TEMP_ONESTATE)    
+    
+    
+      }
+}
+
+DF_TOTAL_ONESTATE <- DF_TOTAL_ONESTATE%>%
+  filter(model != 0)
+}
+#write_csv(DF_TOTAL_ONESTATE, "../output/wholeTableONESTATE_1000_rep_0_20.csv")
+```
+
+
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+# here we add the one state 
+
+DF_TOTAL_ONESTATE <- read.csv("../output/wholeTableONESTATE_1000_rep_0_20.csv")
+
+DF_TOTAL_MIN_ONESTATE <- DF_TOTAL_ONESTATE %>%
+  group_by(model)%>%
+  filter(AIC_model == min(AIC_model))
+
+DF_TOTAL_MIN_ONESTATE <- cbind(States = c(1,1), DF_TOTAL_MIN_ONESTATE)
+
+names(DF_TOTAL_MIN_ONESTATE) <- (c("States", "model","pr_st1_p1", "pr_st1_p2", "minNegL", "AIC", "s1_p1", "s1_p2"))
+
+DF_TOTAL_AIC <-  bind_rows(DF_TOTAL_MIN_SHOW, DF_TOTAL_MIN_ONESTATE)
+
+names(DF_TOTAL_AIC) <- (c("States", "model","pr_st1_p1", "pr_st1_p2", "pr_st2_p1", "pr_st2_p2", "minNegL", "AIC", "s1_p1", "s1_p2", "s2_p2", "s2_p2"))
+
+DF_TOTAL_AIC[, seq(3, 12)] <- round(DF_TOTAL_AIC[, seq(3, 12)], 2)
+
+kable(DF_TOTAL_AIC, caption = "Best models for each of the distributions. We added the prior parameters, the likelihood, AIC criteria and the final parameters. pr:prior, st1: state 1, p1: parameter 1 (shape for weibull and mean for gamma, p2: parameter 2 (scale for weibull and sd for gamma).")
+
+#write.csv(DF_TOTAL_AIC, "../output/DF_TOTAL_AIC.csv")
+
+
+```
 
 \newpage
 
@@ -382,7 +481,7 @@ kable(finalParameters, caption = "Final parameters for both gamma and weibull di
 
 
 
-```{r echo=FALSE}
+```{r echo=FALSE, message=FALSE}
 
 #here we generate the distributions with the obtained parameters 
 X= seq(1, 120, 1)
