@@ -69,7 +69,7 @@ DF_HARVEST_GAMMA <- merge(DF_HARVEST_GAMMA, DF_HARVEST_RESUMEN)
 FIG_MAP_GAMMA<- DF_HARVEST_GAMMA %>% 
   unite("Finca_ID", c(Finca, ID_POR_FINCA)) %>% 
   ggplot(aes(x= x, y = y)) +
-  geom_path(aes(col= as.factor(state)), size= 1)+
+  geom_path(aes(col= as.factor(state), group = (Finca_ID)), size= 1)+
   geom_point(size=1, aes(fill= "Tree"))+ # es importante que sea path, porque así lo hace según coo estan ordenados los
   scale_color_manual(values= mycolsStates)+
   facet_wrap(~Finca_ID, ncol = 3)+
@@ -82,7 +82,7 @@ FIG_MAP_GAMMA<- DF_HARVEST_GAMMA %>%
   labs(x= "X (in m)", y= "Y (in m)", col= "State", fill= "")
 
 
-#ggsave(FIG_MAP_GAMMA, filename= "/home/emilio/archivosTrabajandose/harvestDistribution/distributionAnalisis/output/finalFigures/mapHarvest_.png", height = 12, width = 10, device = "png")
+#ggsave(FIG_MAP_GAMMA, filename= "/home/emilio/archivosTrabajandose/harvestDistribution/distributionAnalisis/output/finalFigures/mapHarvest.pdf", height = 12, width = 10, device = "pdf")
 ggsave(FIG_MAP_GAMMA, filename= "../output/finalFigures/mapHarvest_.png", height = 14, width = 12, device = "png")
 
 
