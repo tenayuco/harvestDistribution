@@ -223,6 +223,13 @@ ggsave(FIG_STATES, filename= "../output/finalFigures/figStates_.pdf", height = 6
 #> min(dataState1$step)
 #> dim(dataState1)[1]/dim(DF_HARVEST_GAMMA)[1]
 
+
+#### aqui voy a hace el filtro de state 1, por finca
+
+DF_HARVEST_RES_porStates <- DF_HARVEST_GAMMA %>%
+  group_by(Finca, state)%>%
+  summarise(meanStep = mean(step), sdStep = sd(step), maxStep = max(step), minStep = min(step))
+
 #############3prueba de medias
 
 #dataStates_H <- dataStates %>% filter(Finca == "H")

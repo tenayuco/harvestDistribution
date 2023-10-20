@@ -18,18 +18,29 @@ WP_COSECHA_UTM_SP <- read.csv("../data/cleanData_wayPointsCoffee_UTM.csv", strin
 #WP_COSECHA_UTM_SP <- read.csv("archivosTrabajandose/harvestDistribution/distributionAnalisis/data/cleanData_wayPointsCoffee_UTM.csv", stringsAsFactors = FALSE )
 
 WP_ALTURAS <- WP_COSECHA_UTM_SP %>%
-  group_by(ID_REC, finca, pante) %>%
-  summarise(MAX_ALT = max(altura..ft.), MIN_ALT = min(altura..ft.))
+  group_by(ID_POR_FINCA, pante, finca) %>%
+  summarise(MAX_ALT = max(altura..ft.), MIN_ALT = min(altura..ft.), DeltaMean = mean(delta))
 
 WP_ALTURAS$DIF_ft <- WP_ALTURAS$MAX_ALT - WP_ALTURAS$MIN_ALT
 WP_ALTURAS$DIF_m <- WP_ALTURAS$DIF_ft * 0.3048
-WP_ALTURAS_I <- WP_ALTURAS %>% filter (finca=="Irlanda")
-WP_ALTURAS_H <- WP_ALTURAS %>% filter (finca=="Hamburgo")
+WP_ALTURAS_E <- WP_ALTURAS %>% filter (finca=="Ecological")
+WP_ALTURAS_C <- WP_ALTURAS %>% filter (finca=="Conventional")
 
 #aunque fue por pante
 
 
-mean(WP_ALTURAS_H$DIF_m)
-sd(WP_ALTURAS_H$DIF_m)
-mean(WP_ALTURAS_I$DIF_m)
-sd(WP_ALTURAS_I$DIF_m)
+mean(WP_ALTURAS_C$DIF_m)
+sd(WP_ALTURAS_C$DIF_m)
+mean(WP_ALTURAS_E$DIF_m)
+sd(WP_ALTURAS_E$DIF_m)
+
+
+###########ahora la distancia arboles, que seguro no se ve con la moda
+
+mean(WP_ALTURAS_C$DeltaMean)
+sd(WP_ALTURAS_C$DeltaMean)
+mean(WP_ALTURAS_E$DeltaMean)
+sd(WP_ALTURAS_E$DeltaMean)
+
+
+
