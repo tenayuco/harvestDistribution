@@ -24,9 +24,16 @@ mycolsStates <-c("#1b4a64", "#fd9706" )
 DF_HARVEST_GAMMA <- read.csv("../data/datosParaFiguras.csv")
 
 
-#aqui invierto el 1 con el 2
+#aqui invierto el 1 con el 2 por medio de una funcon linea
 
 DF_HARVEST_GAMMA$state <-  (-DF_HARVEST_GAMMA$state) + 3
+
+## Y agrego el nombre (long y short step)
+#ver bien cuál quiero
+
+#DF_HARVEST_GAMMA$state[DF_HARVEST_GAMMA$state == "1"] <- "1 (short steps)"
+#DF_HARVEST_GAMMA$state[DF_HARVEST_GAMMA$state == "2"] <- "2 (long steps)"
+
 
 
 DF_HARVEST_GAMMA <- DF_HARVEST_GAMMA %>%
@@ -61,9 +68,6 @@ DF_HARVEST_RESUMEN <- DF_HARVEST_GAMMA %>%
   summarise(observation = sum(conteo)) %>%
   unite("Finca_ID", c(Finca, ID_POR_FINCA))
 
-#aqui agrego el num de observaciones por categoria
-DF_HARVEST_GAMMA <- merge(DF_HARVEST_GAMMA, DF_HARVEST_RESUMEN)
-
 
 
 FIG_MAP_GAMMA<- DF_HARVEST_GAMMA %>% 
@@ -82,7 +86,7 @@ FIG_MAP_GAMMA<- DF_HARVEST_GAMMA %>%
   labs(x= "X (in m)", y= "Y (in m)", col= "State", fill= "")
 
 
-#ggsave(FIG_MAP_GAMMA, filename= "/home/emilio/archivosTrabajandose/harvestDistribution/distributionAnalisis/output/finalFigures/mapHarvest.pdf", height = 12, width = 10, device = "pdf")
+#ggsave(FIG_MAP_GAMMA, filename= "/home/emilio/archivosTrabajandose/harvestDistribution/distributionAnalisis/output/finalFigures/mapHarvest_.png", height = 12, width = 10, device = "png")
 ggsave(FIG_MAP_GAMMA, filename= "../output/finalFigures/mapHarvest_.png", height = 14, width = 12, device = "png")
 
 
