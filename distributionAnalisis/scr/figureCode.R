@@ -12,7 +12,7 @@ groupColors3 <- c("#021128", "#fd9706", "#1b4a64" )
 groupColors2 <- c("#021128", "#fd9706")
 mycols3c <-c("#759580", "#1b4a64")
 
-mycolsStates <-c("#1b4a64", "#fd9706" )
+mycolsStates <-c("#fd9706", "#1b4a64" )
 
 #these 2 colors contrast weel for color blind people
 
@@ -31,8 +31,8 @@ DF_HARVEST_GAMMA$state <-  (-DF_HARVEST_GAMMA$state) + 3
 ## Y agrego el nombre (long y short step)
 #ver bien cuál quiero
 
-#DF_HARVEST_GAMMA$state[DF_HARVEST_GAMMA$state == "1"] <- "1 (short steps)"
-#DF_HARVEST_GAMMA$state[DF_HARVEST_GAMMA$state == "2"] <- "2 (long steps)"
+DF_HARVEST_GAMMA$state[DF_HARVEST_GAMMA$state == "1"] <- "Close (SS)"
+DF_HARVEST_GAMMA$state[DF_HARVEST_GAMMA$state == "2"] <- "Far (MLS)"
 
 
 
@@ -70,6 +70,7 @@ DF_HARVEST_RESUMEN <- DF_HARVEST_GAMMA %>%
 
 
 
+
 FIG_MAP_GAMMA<- DF_HARVEST_GAMMA %>% 
   unite("Finca_ID", c(Finca, ID_POR_FINCA)) %>% 
   ggplot(aes(x= x, y = y)) +
@@ -97,11 +98,12 @@ binaryPlot <- DF_HARVEST_GAMMA %>%
   ggplot(aes(x= contador , y= ID_POR_FINCA, fill= as.factor(state)))+
   geom_tile(col= "black")+
   facet_wrap(~Finca, scales= "free_y", ncol= 1)+
-  scale_fill_manual(values= c("#FFFFFF", "black"))+
+  scale_fill_manual(values= c("#FFFFFF", "black"), labels=c("Close (SS)", "Far (MLS)"))+
   scale_y_continuous(breaks=seq(1,6,1))+
   theme_bw()+
   theme(strip.background =element_rect(fill="white"))+
   theme(text = element_text(size = 20))+
+  #theme(legend.position = "bottom")+
   labs(x= "Steps", y= "ID", fill= "State", shape= "State")
 
 
@@ -115,8 +117,8 @@ X= seq(1, 120, 1)
 
 
 #este no es igual que en el otro codigo ,porque invert los estados    
-DF_gamma_st1 <- data.frame("distribution"= c("gamma"), "state" = 1, "X"= X,  "PDF" = dgamma(X, shape= 3.62, rate = 0.845))
-DF_gamma_st2 <- data.frame("distribution"= c("gamma"), "state" = 2, "X"= X,  "PDF" = dgamma(X, shape= 1.3, rate = 0.075))
+DF_gamma_st1 <- data.frame("distribution"= c("gamma"), "state" = "Close (SS)", "X"= X,  "PDF" = dgamma(X, shape= 3.62, rate = 0.845))
+DF_gamma_st2 <- data.frame("distribution"= c("gamma"), "state" = "Far (MLS)", "X"= X,  "PDF" = dgamma(X, shape= 1.3, rate = 0.075))
 
 
 
@@ -144,7 +146,7 @@ DIS_PLOT<- ggplot() +
                        mycolsStates)+
   theme_bw()+
   theme(text = element_text(size = 20))+
-  labs(x= "Step length (in m)", y= "Frecuency", col= "State")
+  labs(x= "Step length (in m)", y= "Frequency", col= "State")
 
 DIS_PLOT_COM <- DIS_PLOT + annotation_custom(ggplotGrob(CAJADIST), xmin = 15, xmax = 100, ymin = 0.1, ymax = 0.2)
 
@@ -170,7 +172,7 @@ dataStates <- DF_HARVEST_GAMMA %>%
 dataStates <- dataStates %>%
   ungroup()%>%  #no entiendo que estaba agrupado, supongo que el ID con el state...
   complete(Finca, ID_POR_FINCA, state)%>%
-  filter(state==2)
+  filter(state=="Far (MLS)")
 
 
 dataStates$numStates[is.na(dataStates$numStates)] <- 0 
@@ -195,7 +197,8 @@ HIST_ST1 <- dataStates %>%
   scale_fill_manual(values= c("#AAAAAA", "white"))+
   theme_bw()+
   theme(text = element_text(size = 20))+
-  labs(x= "Farm", y= "Percentage of steps in state 2", fill= "Farm")
+  theme(legend.position = "None")+
+  labs(x= "Farm", y= "Percentage of far steps (MLS)", fill= "Farm")
 
 #ggsave(HIST_ST1, filename= "/home/emilio/archivosTrabajandose/harvestDistribution/distributionAnalisis/output/finalFigures/histoFARM.png", height = 6, width = 6, device = "png")
 #ggsave(HIST_ST1, filename= "../output/finalFigures/histoFARM.png", height = 6, width = 5, device = "png")
@@ -226,9 +229,9 @@ ggsave(FIG_STATES, filename= "../output/finalFigures/figStates_.pdf", height = 6
 
 #### aqui voy a hace el filtro de state 1, por finca
 
-DF_HARVEST_RES_porStates <- DF_HARVEST_GAMMA %>%
-  group_by(Finca, state)%>%
-  summarise(meanStep = mean(step), sdStep = sd(step), maxStep = max(step), minStep = min(step))
+#DF_HARVEST_RES_porStates <- DF_HARVEST_GAMMA %>%
+ # group_by(Finca, state)%>%
+  #summarise(meanStep = mean(step), sdStep = sd(step), maxStep = max(step), minStep = min(step))
 
 #############3prueba de medias
 
