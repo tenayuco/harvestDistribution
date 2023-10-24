@@ -31,8 +31,8 @@ DF_HARVEST_GAMMA$state <-  (-DF_HARVEST_GAMMA$state) + 3
 ## Y agrego el nombre (long y short step)
 #ver bien cuál quiero
 
-DF_HARVEST_GAMMA$state[DF_HARVEST_GAMMA$state == "1"] <- "Close (SS)"
-DF_HARVEST_GAMMA$state[DF_HARVEST_GAMMA$state == "2"] <- "Far (MLS)"
+DF_HARVEST_GAMMA$state[DF_HARVEST_GAMMA$state == "1"] <- "Collect (SS)"
+DF_HARVEST_GAMMA$state[DF_HARVEST_GAMMA$state == "2"] <- "Search (MLS)"
 
 
 
@@ -59,9 +59,9 @@ rm(DF_HARVEST_GAMMA_H)
 #ahora estan umberados del 1 al 6 dentro de cada finca
 #codesnames
 
-#cambiams por E de ecolo
+#cambiams por O de organic
 DF_HARVEST_GAMMA$Finca[DF_HARVEST_GAMMA$Finca== "H"] <- "C"
-DF_HARVEST_GAMMA$Finca[DF_HARVEST_GAMMA$Finca== "I"] <- "E"
+DF_HARVEST_GAMMA$Finca[DF_HARVEST_GAMMA$Finca== "I"] <- "O"
 
 DF_HARVEST_RESUMEN <- DF_HARVEST_GAMMA %>%
   group_by(Finca, ID_POR_FINCA)%>%
@@ -88,7 +88,7 @@ FIG_MAP_GAMMA<- DF_HARVEST_GAMMA %>%
 
 
 #ggsave(FIG_MAP_GAMMA, filename= "/home/emilio/archivosTrabajandose/harvestDistribution/distributionAnalisis/output/finalFigures/mapHarvest_.png", height = 12, width = 10, device = "png")
-ggsave(FIG_MAP_GAMMA, filename= "../output/finalFigures/mapHarvest_.png", height = 14, width = 12, device = "png")
+ggsave(FIG_MAP_GAMMA, filename= "../output/finalFigures/mapHarvest_.png", height = 14, width = 12.5, device = "png")
 
 
 ##########################333
@@ -98,7 +98,7 @@ binaryPlot <- DF_HARVEST_GAMMA %>%
   ggplot(aes(x= contador , y= ID_POR_FINCA, fill= as.factor(state)))+
   geom_tile(col= "black")+
   facet_wrap(~Finca, scales= "free_y", ncol= 1)+
-  scale_fill_manual(values= c("#FFFFFF", "black"), labels=c("Close (SS)", "Far (MLS)"))+
+  scale_fill_manual(values= c("#FFFFFF", "black"), labels=c("Collect (SS)", "Search (MLS)"))+
   scale_y_continuous(breaks=seq(1,6,1))+
   theme_bw()+
   theme(strip.background =element_rect(fill="white"))+
@@ -117,8 +117,8 @@ X= seq(1, 120, 1)
 
 
 #este no es igual que en el otro codigo ,porque invert los estados    
-DF_gamma_st1 <- data.frame("distribution"= c("gamma"), "state" = "Close (SS)", "X"= X,  "PDF" = dgamma(X, shape= 3.62, rate = 0.845))
-DF_gamma_st2 <- data.frame("distribution"= c("gamma"), "state" = "Far (MLS)", "X"= X,  "PDF" = dgamma(X, shape= 1.3, rate = 0.075))
+DF_gamma_st1 <- data.frame("distribution"= c("gamma"), "state" = "Collect (SS)", "X"= X,  "PDF" = dgamma(X, shape= 3.62, rate = 0.845))
+DF_gamma_st2 <- data.frame("distribution"= c("gamma"), "state" = "Search (MLS)", "X"= X,  "PDF" = dgamma(X, shape= 1.3, rate = 0.075))
 
 
 
@@ -172,7 +172,7 @@ dataStates <- DF_HARVEST_GAMMA %>%
 dataStates <- dataStates %>%
   ungroup()%>%  #no entiendo que estaba agrupado, supongo que el ID con el state...
   complete(Finca, ID_POR_FINCA, state)%>%
-  filter(state=="Far (MLS)")
+  filter(state=="Search (MLS)")
 
 
 dataStates$numStates[is.na(dataStates$numStates)] <- 0 
@@ -198,7 +198,7 @@ HIST_ST1 <- dataStates %>%
   theme_bw()+
   theme(text = element_text(size = 20))+
   theme(legend.position = "None")+
-  labs(x= "Farm", y= "Percentage of far steps (MLS)", fill= "Farm")
+  labs(x= "Plantation", y= "Percentage of search steps (MLS)", fill= "Plantation")
 
 #ggsave(HIST_ST1, filename= "/home/emilio/archivosTrabajandose/harvestDistribution/distributionAnalisis/output/finalFigures/histoFARM.png", height = 6, width = 6, device = "png")
 #ggsave(HIST_ST1, filename= "../output/finalFigures/histoFARM.png", height = 6, width = 5, device = "png")
