@@ -73,6 +73,8 @@ WP_COSECHA_UTM_SP_PRE <- WP_COSECHA_UTM_SP %>%
 WP_COSECHA_UTM_SP_PRE$pante <- NULL
 ```
 
+
+
 ```{r echo=FALSE, warning=FALSE, fig.cap= "12 trajectories of harvesters for both farms (E: Ecological, C: conventional). Each green dot represent a tree" , fig.height= 12, fig.width=10}
 
 mapHarvest_total<- WP_COSECHA_UTM_SP_PRE %>% 
