@@ -31,8 +31,8 @@ DF_HARVEST_GAMMA$state <-  (-DF_HARVEST_GAMMA$state) + 3
 ## Y agrego el nombre (long y short step)
 #ver bien cuál quiero
 
-DF_HARVEST_GAMMA$state[DF_HARVEST_GAMMA$state == "1"] <- "Collect (SS)"
-DF_HARVEST_GAMMA$state[DF_HARVEST_GAMMA$state == "2"] <- "Search (MLS)"
+DF_HARVEST_GAMMA$state[DF_HARVEST_GAMMA$state == "1"] <- "short-steps"
+DF_HARVEST_GAMMA$state[DF_HARVEST_GAMMA$state == "2"] <- "long-steps"
 
 
 
@@ -75,7 +75,7 @@ FIG_MAP_GAMMA<- DF_HARVEST_GAMMA %>%
   unite("Finca_ID", c(Finca, ID_POR_FINCA)) %>% 
   ggplot(aes(x= x, y = y)) +
   geom_path(aes(col= as.factor(state), group = (Finca_ID)), size= 1)+
-  geom_point(size=1, aes(fill= "Tree"))+ # es importante que sea path, porque así lo hace según coo estan ordenados los
+  geom_point(size=1, aes(fill= "Visited Tree"))+ # es importante que sea path, porque así lo hace según coo estan ordenados los
   scale_color_manual(values= mycolsStates)+
   facet_wrap(~Finca_ID, ncol = 3)+
   geom_text(x = 140, y = 10, aes(label = observation), data = DF_HARVEST_RESUMEN)+
@@ -98,7 +98,7 @@ binaryPlot <- DF_HARVEST_GAMMA %>%
   ggplot(aes(x= contador , y= ID_POR_FINCA, fill= as.factor(state)))+
   geom_tile(col= "black")+
   facet_wrap(~Finca, scales= "free_y", ncol= 1)+
-  scale_fill_manual(values= c("#FFFFFF", "black"), labels=c("Collect (SS)", "Search (MLS)"))+
+  scale_fill_manual(values= c("black", "#FFFFFF"), labels=c("long-steps", "short-steps"))+
   scale_y_continuous(breaks=seq(1,6,1))+
   theme_bw()+
   theme(strip.background =element_rect(fill="white"))+
@@ -117,8 +117,8 @@ X= seq(1, 120, 1)
 
 
 #este no es igual que en el otro codigo ,porque invert los estados    
-DF_gamma_st1 <- data.frame("distribution"= c("gamma"), "state" = "Collect (SS)", "X"= X,  "PDF" = dgamma(X, shape= 3.62, rate = 0.845))
-DF_gamma_st2 <- data.frame("distribution"= c("gamma"), "state" = "Search (MLS)", "X"= X,  "PDF" = dgamma(X, shape= 1.3, rate = 0.075))
+DF_gamma_st1 <- data.frame("distribution"= c("gamma"), "state" = "short-steps", "X"= X,  "PDF" = dgamma(X, shape= 3.62, rate = 0.845))
+DF_gamma_st2 <- data.frame("distribution"= c("gamma"), "state" = "long-steps", "X"= X,  "PDF" = dgamma(X, shape= 1.3, rate = 0.075))
 
 
 
@@ -172,7 +172,7 @@ dataStates <- DF_HARVEST_GAMMA %>%
 dataStates <- dataStates %>%
   ungroup()%>%  #no entiendo que estaba agrupado, supongo que el ID con el state...
   complete(Finca, ID_POR_FINCA, state)%>%
-  filter(state=="Search (MLS)")
+  filter(state=="long-steps")
 
 
 dataStates$numStates[is.na(dataStates$numStates)] <- 0 
@@ -198,7 +198,7 @@ HIST_ST1 <- dataStates %>%
   theme_bw()+
   theme(text = element_text(size = 20))+
   theme(legend.position = "None")+
-  labs(x= "Plantation", y= "Percentage of search steps (MLS)", fill= "Plantation")
+  labs(x= "Plantation", y= "Percentage of long-steps", fill= "Plantation")
 
 #ggsave(HIST_ST1, filename= "/home/emilio/archivosTrabajandose/harvestDistribution/distributionAnalisis/output/finalFigures/histoFARM.png", height = 6, width = 6, device = "png")
 #ggsave(HIST_ST1, filename= "../output/finalFigures/histoFARM.png", height = 6, width = 5, device = "png")
@@ -250,7 +250,7 @@ FIG_MAP_CONTEO<- DF_HARVEST_GAMMA %>%
   unite("Finca_ID", c(Finca, ID_POR_FINCA)) %>% 
   ggplot(aes(x= x, y = y)) +
   geom_path(aes(col= as.factor(state)), size= 0.5)+
-  geom_point(size=0.5, aes(fill= "Tree"))+ # es importante que sea path, porque así lo hace según coo estan ordenados los
+  geom_point(size=0.5, aes(fill= "Visited Tree"))+ # es importante que sea path, porque así lo hace según coo estan ordenados los
   scale_color_manual(values= mycolsStates)+
   facet_wrap(~Finca_ID, ncol = 3)+
   geom_text(x = 140, y = 10, aes(label = observation), data = DF_HARVEST_RESUMEN)+
