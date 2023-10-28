@@ -31,8 +31,8 @@ DF_HARVEST_GAMMA$state <-  (-DF_HARVEST_GAMMA$state) + 3
 ## Y agrego el nombre (long y short step)
 #ver bien cuál quiero
 
-DF_HARVEST_GAMMA$state[DF_HARVEST_GAMMA$state == "1"] <- "short-steps"
-DF_HARVEST_GAMMA$state[DF_HARVEST_GAMMA$state == "2"] <- "long-steps"
+DF_HARVEST_GAMMA$state[DF_HARVEST_GAMMA$state == "1"] <- "Collect"
+DF_HARVEST_GAMMA$state[DF_HARVEST_GAMMA$state == "2"] <- "Search"
 
 
 
@@ -98,7 +98,7 @@ binaryPlot <- DF_HARVEST_GAMMA %>%
   ggplot(aes(x= contador , y= ID_POR_FINCA, fill= as.factor(state)))+
   geom_tile(col= "black")+
   facet_wrap(~Finca, scales= "free_y", ncol= 1)+
-  scale_fill_manual(values= c("black", "#FFFFFF"), labels=c("long-steps", "short-steps"))+
+  scale_fill_manual(values= c("#FFFFFF", "black"), labels=c("Collect", "Search"))+
   scale_y_continuous(breaks=seq(1,6,1))+
   theme_bw()+
   theme(strip.background =element_rect(fill="white"))+
@@ -117,8 +117,8 @@ X= seq(1, 120, 1)
 
 
 #este no es igual que en el otro codigo ,porque invert los estados    
-DF_gamma_st1 <- data.frame("distribution"= c("gamma"), "state" = "short-steps", "X"= X,  "PDF" = dgamma(X, shape= 3.62, rate = 0.845))
-DF_gamma_st2 <- data.frame("distribution"= c("gamma"), "state" = "long-steps", "X"= X,  "PDF" = dgamma(X, shape= 1.3, rate = 0.075))
+DF_gamma_st1 <- data.frame("distribution"= c("gamma"), "state" = "Collect", "X"= X,  "PDF" = dgamma(X, shape= 3.62, rate = 0.845))
+DF_gamma_st2 <- data.frame("distribution"= c("gamma"), "state" = "Search", "X"= X,  "PDF" = dgamma(X, shape= 1.3, rate = 0.075))
 
 
 
@@ -172,7 +172,7 @@ dataStates <- DF_HARVEST_GAMMA %>%
 dataStates <- dataStates %>%
   ungroup()%>%  #no entiendo que estaba agrupado, supongo que el ID con el state...
   complete(Finca, ID_POR_FINCA, state)%>%
-  filter(state=="long-steps")
+  filter(state=="Search")
 
 
 dataStates$numStates[is.na(dataStates$numStates)] <- 0 
@@ -198,7 +198,7 @@ HIST_ST1 <- dataStates %>%
   theme_bw()+
   theme(text = element_text(size = 20))+
   theme(legend.position = "None")+
-  labs(x= "Plantation", y= "Percentage of long-steps", fill= "Plantation")
+  labs(x= "Plantation", y= "Percentage of steps in state Search", fill= "Plantation")
 
 #ggsave(HIST_ST1, filename= "/home/emilio/archivosTrabajandose/harvestDistribution/distributionAnalisis/output/finalFigures/histoFARM.png", height = 6, width = 6, device = "png")
 #ggsave(HIST_ST1, filename= "../output/finalFigures/histoFARM.png", height = 6, width = 5, device = "png")
