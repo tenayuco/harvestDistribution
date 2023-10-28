@@ -1,0 +1,690 @@
+---
+title: "Supplementary Material 1. HMM analysis from: Harvesting trajectories in large-scale coffee plantations: ecological and managment drivers and implications"
+author: "Mora Van Cauwelaert et al., 2023"
+output:
+  pdf_document: default
+bibliography: movehmm.bib
+---
+
+
+## 0. Introduction to HMM
+
+Hidden Markov models (HMMs) are models in which the distribution that generates an observation $Z_t$ depends on the state $S_t$ of an underlying and unobserved Markov process (Fig.1) [@zucchini2016hidden]. In this sense, the observations $Z_t$ can be retrieved from one to multiple distributions related to the number of states. In the context of animal movement, the state $S_t$ is interpreted as a proxy for the behavioral state of the animal (e.g. foraging, exploring; [@michelot2016movehmm]). The observations $Zt$ are bivariate time series ($Zt = (l_t, \phi_t)$) where $l_t$ is the step length (the Euclidean distance) and $\phi_t$ the turning angle, between two succesive locations [@michelot2019movehmm, @zucchini2016hidden]. Biologically speaking, these models try to include the process where the movement of agents (e.g. short or large steps) depends on its behavior. With these models, we can define the different originary distributions and then decode the most likely sequence of states along the trajectory of an agent, its average time within a state, and the number of switches between states.  
+
+![Process generating the observations in a two-state HMM. The chain followed the path 2, 1, 1, 1, 2, 1, as indicated on the left. The corresponding state-dependent distributions are shown in the middle. The observations are generated from the corresponding active distributions. Taken from (Zucchini, 2016)](hmmFullfigure.png){width=50%}
+
+
+
+Here we used the _movehmm_ library (@michelot2019movehmm) to i) fit the most likely distributions and HMM to the harvester movement data, ii) describe the different states and iii) decode and compare the sequence of states in the two farms (Ecological and Conventional) with the Viterbi algorithm. 
+
+\newpage
+
+## 1. Fitting of HMM
+
+### 1.1. Preparation of data
+
+We loaded _ggplot2_, _dplyr_, _tidyverse_ and _movehmm_ libraries. We then loaded the data of the trajectories and did some punctual modifications to it. We had in total 12 trajectories, with ($x, y$) coordinates (Fig. 2).
+
+```{r, message=FALSE, echo=FALSE}
+library(ggplot2)
+library(dplyr)
+library(tidyverse)
+library(moveHMM)
+library(knitr)
+library(reshape2)
+colorsGris <- c("black","#555555", "white")
+groupColors3 <- c("#021128", "#fd9706", "#1b4a64" )
+groupColors2 <- c("#021128", "#fd9706")
+mycols3c <-c("#759580", "#1b4a64")
+```
+
+
+```{r}
+#define the plantation
+
+#mode <- "E"
+mode <- "C"
+```
+
+
+
+```{r, echo=FALSE, message=FALSE}
+
+#load the data
+WP_COSECHA_UTM_SP <- read.csv("../data/cleanData_wayPointsCoffee_UTM.csv", stringsAsFactors = FALSE )
+
+#punctual modifications
+WP_COSECHA_UTM_SP <- WP_COSECHA_UTM_SP %>%
+  mutate(finca = replace(finca, finca == "Ecological", "E")) %>%
+  mutate(finca = replace(finca, finca == "Conventional", "C"))
+
+
+  
+WP_COSECHA_UTM_SP <- WP_COSECHA_UTM_SP %>%
+  filter(finca == mode)
+
+
+
+#normalization of UTM
+WP_COSECHA_UTM_SP <- WP_COSECHA_UTM_SP %>% rowwise() %>% 
+  group_by(finca, ID_POR_FINCA, pante)%>% 
+  mutate(xNorm = x_UTM - min(x_UTM)) %>%
+  mutate(yNorm = y_UTM - min(y_UTM))
+
+#now the precision (not the accuracy) of the GPS goes to 5 decimal points (lat y lot) and this is equivalent to ~1m
+#so we can round the xNorm and y yNorm
+WP_COSECHA_UTM_SP$xNorm <- round(WP_COSECHA_UTM_SP$xNorm, 0)
+WP_COSECHA_UTM_SP$yNorm <- round(WP_COSECHA_UTM_SP$yNorm, 0)
+
+
+#we remove some spurious data were delta = 0
+WP_COSECHA_UTM_SP <- WP_COSECHA_UTM_SP %>%
+  filter(delta !=0)%>%
+  unite("Finca_ID", finca, ID_POR_FINCA, remove = TRUE)
+
+#we create this ID column to prepare the data for movehmm
+WP_COSECHA_UTM_SP_PRE <- WP_COSECHA_UTM_SP %>%
+  dplyr::select("ID" = Finca_ID, xNorm, yNorm)
+
+#we remove the pante information as it is not relevant for the analysis
+WP_COSECHA_UTM_SP_PRE$pante <- NULL
+```
+
+
+
+```{r echo=FALSE, warning=FALSE, fig.cap= "12 trajectories of harvesters for both farms (E: Ecological, C: conventional). Each green dot represent a tree" , fig.height= 12, fig.width=10}
+
+mapHarvest_total<- WP_COSECHA_UTM_SP_PRE %>% 
+  ggplot(aes(x= xNorm, y = yNorm)) +
+  geom_path(aes(), size= 1)+
+  geom_point(size=1, col= "black", shape= 21,fill= "darkgreen")+ 
+  scale_color_manual(values= mycols3c)+
+  facet_wrap(~ ID, ncol=3)+
+  theme(panel.spacing = unit(0.8, "lines"), text = element_text(size = 15))+
+  theme_bw()+
+  labs(x= "X", y= "Y", col= "Farm")
+
+mapHarvest_total
+```
+```{r, echo=FALSE}
+#  we create the movehmm object
+
+dataCosecha <- prepData(WP_COSECHA_UTM_SP_PRE, type= "UTM", coordNames = c("xNorm", "yNorm"))
+
+#we remove the steps equal to zero (when the worker harvest 2 trees separated by less than a meter..)
+dataCosecha <- dataCosecha %>% 
+  filter(step!= 0)  #we remove the zeros
+```
+
+A first assumption for the analysis was made: we took these time irregular trajectories (where each point represents one different tree, but where the time between two trees is variable) and treated them as a regular trajectories. This aimed to analyze the change in the movement of the workers during a day, generated by the underlying pattern of trees or by the differences in the fruit charge and ripening synchronicity. We convert this database into a _movehmm_ object where the step distance $l_t$ and the relative angle $\phi_t$ between the $(x, y)$ coordinates is calculated (table 1). Now, for the following analysis, we only took the step distance and treated both farms as one. We decided to exclude the angles because they didn't have a biological meaning for irregular trajectories. The input for the analysis is then the histogram presented in Fig. 3. The values of the steps lengths ranges from 1 to 117, with a mean of 5.14 and a median equal to 4. 
+
+```{r include=FALSE}
+summary(dataCosecha$step)
+```
+
+
+
+```{r echo=FALSE} 
+kable(head(dataCosecha), caption = "First lines of the movehmm object with harvester data")
+```
+
+
+
+```{r echo=FALSE, warning=FALSE, fig.cap= "Histogram of the steps lengths divided by the different trajectories.", fig.height= 3, fig.width=5}
+pHisto_step_general <-dataCosecha %>%
+  ggplot(aes(x= as.numeric(step), y=(..count..)/tapply(..count..,..PANEL..,sum)[..PANEL..])) +
+  geom_histogram(binwidth=2, color= "black", aes(fill=as.character(ID))) +
+scale_fill_viridis_d()+  
+  theme(panel.spacing = unit(0.8, "lines"),
+        text = element_text(size = 15))+
+  theme_bw()+ 
+   labs(x= "Distance (in m)", y= "Proportion", fill= "ID")
+pHisto_step_general
+```
+
+\newpage
+
+### 1.2. Fitting of the data
+
+The algorithm of the _movehmm_ library uses:
+
+a) a predefined number of states. Here we will use two. But the algorithm also explores the case when both states are equal. 
+
+b) a defined family of distributions. Here we will try to fit two different exponential families (_gamma_ and _weibull_).
+
+c) prior parameters for each of the distributions, for each state.  
+
+d) The observations (step-lengths) (the data of harvesters)
+
+With these inputs, the algorithm extracts the most likely two-state-distributions with their respective parameters (within the predefined family of distributions) from the data. During the fitting process, the algorithm uses the maximum-log likelihood and the _forward algorithm_ (a recursive algorithm starting with the prior distributions; [@zucchini2016hidden]). We ran a loop to fit the data to two different families (_weibull_, and _gamma_) and in order to avoid local maximal likelihoods, we swapped 1000 combinations across a range of prior parameters for each model [@michelot2019movehmm]. For the _gamma_ distribution, the minimum and maximum values of each range were chosen to encompass the full distribution (including values below and over the mean). For the _weibull_ distribution, the maximum shape considered the left-skew shape and the scale was chosen to include the 120m long steps (see the ranges in table 2). Many of these combinations of prior parameters converged to the same final distributions.  
+
+```{r, echo=FALSE}
+rangosDist <- list("gamma" = list("mean" = c(2.8, 6.4), "sd" = c(1,8)), 
+                   "weibull" = list("shape" = c(0.1, 40), "scale" = c(0.16,23))  ##segun el articulo
+                   )
+
+DF_rangos <- data.frame("value" = c("min", "max"))
+DF_rangos <- cbind(DF_rangos, as.data.frame(rangosDist))
+kable(DF_rangos, caption = "Minimun and maximum values of the prior parameters for each distribution")
+```
+
+
+```{r, echo=FALSE}
+
+#his chunks runs the model. Here it is inactivated
+#but we can activate it with runModel <- yes. But for now, we load the result in the following chunk
+DF_TOTAL <- data.frame("model"= 0, 
+            "prior_par0_st1_st2"= 0,
+            "prior_par1_st1_st2" = 0,
+           "minNegLike" = 0,
+           "AIC_model" = 0,
+           "st1_par0"= 0,
+           "st1_par1"=0,
+           "st2_par0"=0,
+           "st2_par1"= 0)
+
+repetitions <- seq(1, 100,1)
+runModel <- "yes"
+if (runModel == "yes"){
+for (modelStep in c("weibull", "gamma")){
+  print(modelStep)
+  rangePar0 <- runif(100000, rangosDist[[modelStep]][[1]][1], rangosDist[[modelStep]][[1]][2])
+  rangePar1 <- runif(100000, rangosDist[[modelStep]][[2]][1], rangosDist[[modelStep]][[2]][2])
+  for (rep in repetitions){
+    par0 <- c(sample(rangePar0,1, replace= TRUE),
+              sample(rangePar0,1, replace= TRUE)) # step mean (two parameters: one for each state)
+    par1 <- c(sample(rangePar1,1, replace= TRUE), 
+              sample(rangePar1,1, replace= TRUE)) 
+    par0 <- round(par0, 4)
+    par1 <- round(par1, 4)
+    #print(par0)
+    #print(par1)
+    stepPar <- c(par0,par1)
+  #op1
+    tryCatch({
+    m_cosecha<- fitHMM(data = dataCosecha, stepDist = modelStep,  
+                       nbStates = 2 , stepPar0 = stepPar, angleDist = "none")
+    },
+    error=function(cond){
+      print("error de parametros")
+      print(stepPar)
+      message(cond)
+    }
+    )
+    
+    minNegLike <-  m_cosecha$mod$minimum
+    AIC_model <- AIC(m_cosecha)
+    
+    DF_TEMP <- data.frame("model"= modelStep, 
+                          "prior_par0_st1_st2"= paste(par0[1], "_", par0[2]), 
+                          "prior_par1_st1_st2"=  paste(par1[1], "_", par1[2]),
+                          "minNegLike" = minNegLike,
+                          "AIC_model" = AIC_model,
+                          "st1_par0"= m_cosecha$mle$stepPar[1,1],
+                          "st1_par1"= m_cosecha$mle$stepPar[2,1],
+                          "st2_par0"= m_cosecha$mle$stepPar[1,2],
+                          "st2_par1"= m_cosecha$mle$stepPar[2,2])
+    
+                      
+    DF_TOTAL <- rbind(DF_TOTAL, DF_TEMP)    
+    
+    
+      }
+}
+
+DF_TOTAL <- DF_TOTAL%>%
+  filter(model != 0)
+}
+
+```
+
+```{r}
+write_csv(DF_TOTAL, paste("../output/wholeTable_100_rep_0_20",as.character(mode), ".csv", sep = "_"))
+```
+
+
+```{r, echo=FALSE}
+
+#here we load the simulation with the 1000 combinations
+#DF_TOTAL_1000 <- read.csv("../output/wholeTable_100_rep_0_20_E_.csv")
+DF_TOTAL_1000 <- read.csv("../output/wholeTable_100_rep_0_20_C_.csv")
+
+
+#we remove the lnorm as we will not use it
+DF_TOTAL_1000 <- DF_TOTAL_1000 %>%
+  filter(model != "lnorm") %>%
+  separate(prior_par0_st1_st2, c("pr_par0_st1", "pr_par0_st2"), sep= "_", remove = TRUE) %>%
+  separate(prior_par1_st1_st2, c("pr_par1_st1", "pr_par1_st2"), sep= "_", remove = TRUE)
+
+DF_TOTAL_1000$pr_par0_st1 <- as.numeric(DF_TOTAL_1000$pr_par0_st1)
+DF_TOTAL_1000$pr_par1_st1 <- as.numeric(DF_TOTAL_1000$pr_par1_st1)
+DF_TOTAL_1000$pr_par0_st2 <- as.numeric(DF_TOTAL_1000$pr_par0_st2)
+DF_TOTAL_1000$pr_par1_st2 <- as.numeric(DF_TOTAL_1000$pr_par1_st2)
+
+DF_TOTAL_1000[,seq(2,11,1)] <- round(DF_TOTAL_1000[,seq(2,11,1)], 2)
+
+```
+
+
+```{r, echo=FALSE}
+#here we have the outiers that were removed, beacuse the show no variance
+DF_1000_OUTLIERS <- DF_TOTAL_1000 %>%
+  filter(st1_par1 <0.00001 | st2_par1 <0.00001)
+
+DF_1000_OUTLIERS <- DF_1000_OUTLIERS %>%
+  group_by(model) %>%
+  mutate(conteo = 1)%>%
+  mutate(contador = cumsum(conteo))
+```
+
+```{r, echo=FALSE}
+
+#the new data frame will not have the outliers
+DF_1000_SIN <- DF_TOTAL_1000 %>%
+  filter(st1_par1 >0.00001 & st2_par1 >0.00001)
+```
+
+```{r, echo=FALSE}
+
+
+##vamos a qiotar gran AIC
+DF_1000_SIN_LIMIT <- DF_1000_SIN %>%
+  filter(AIC_model != "Inf")
+
+```
+
+Some combinations resulted in distributions with zero variance. We decided to remove those cases as they did not make any biological sense. We also removed states with means higher than the ranges, for visualization (this does not change the results as they had maximal AIC that would be removed anyways). We then plotted the minimum negative log of the likelihood without these outliers (Fig.4). The minimum negative log-likelihood is equivalent to the maximum likelihood [@zucchini2016hidden]. Almost all the combinations of prior parameters converge to two models with equivalent minimum likelihood for both distributions (Fig. 4). In this sense, the parameters of the models with minimal likelihoods are robust to the initial parameters. In particular gamma distribution resulted in models with a lower min neg likelihood (and lower AIC as show in table 3.)
+
+We also explored the differences in the estimated parameters between the resulting states and their AIC. This corroborates that the models with the minimal AIC have two clearly distinct states (purples dots in Fig. 5). Besides, we ran all the analysis with one-state distributions for both families and compared them with our two-state distribution models using the minimal AIC (table 3). As we note in table 3, two-state distribution have the minimal AIC, and particularly with the gamma family. 
+
+
+```{r, fig.cap= "Minimun Negative Log-likelihood per combination of prior parameters for two different distributions", echo=FALSE, fig.height= 3, fig.width=5}
+FIG_MIN_LIKE <- DF_1000_SIN_LIMIT %>% 
+  
+  filter(AIC_model != "Inf")%>% 
+  ggplot()+
+  geom_jitter(aes(x= model, y= minNegLike, shape= model, fill= model), size= 3)+
+  scale_fill_manual(values = c("#AAAAAA", "#FFFFFF")) +
+  #scale_fill_manual(values = groupColors3) +
+  scale_shape_manual(values = c(21, 24, 22))+
+  theme_bw()+
+  labs(x= "Distribution", y= "minimum negative log likelihood", shape= "Distribution", fill= "Distribution")
+FIG_MIN_LIKE
+```
+
+
+
+```{r, fig.cap= "Parameters space for both states for each of the distributions. The (x,y) coordinate of each dot represent the mean of state 1 and 2, and the horizontal and vertical errorbar their standard deviation. The dotted line represent the identity, where both states are equivalent. The color represent the AIC value, where gray values show infinitely big values. The purple dots represent the minimal AIC", echo=FALSE, fig.height= 4, fig.width=9}
+
+FIG_PARA <- DF_1000_SIN_LIMIT %>% 
+  #filter(AIC_model != "Inf")%>% 
+  ggplot(aes(x= st1_par0 , y= st2_par0))+
+  geom_errorbar(aes(color= AIC_model, ymin = st2_par0 - st2_par1, ymax = st2_par0 + st2_par1))+
+  geom_errorbarh(aes(color= AIC_model, xmin = st1_par0 - st1_par1, xmax = st1_par0 + st1_par1))+
+    geom_point(aes(shape= model, fill= AIC_model), size= 4)+
+  facet_wrap(~model, scales = "free")+
+  scale_fill_viridis_c()+
+    scale_color_viridis_c()+
+  geom_segment(aes(x = 0, y= 0,  xend= 25, yend= 25), linetype = 2)+
+
+  #scale_fill_manual(values = groupColors3) +
+  scale_shape_manual(values = c(21, 24, 22))+
+  theme_bw()+
+  labs(x= "parameter1_state1", y= "parameter1_State2", shape= "Distribution", fill= "AIC", color = "AIC")
+FIG_PARA
+```
+
+
+ 
+
+
+
+
+```{r, echo=FALSE}
+
+#here we extract the values with minimal AIC for both distributions 
+DF_TOTAL_MIN <- DF_1000_SIN_LIMIT %>%
+  group_by(model)%>%
+  filter(AIC_model == min(AIC_model)) %>%
+  group_by(model, AIC_model) %>%
+  mutate(conteo = 1)%>%
+  mutate(contador= cumsum(conteo))%>%
+  filter(contador ==1)
+
+DF_TOTAL_MIN$conteo <- NULL
+DF_TOTAL_MIN$contador <- NULL
+
+DF_TOTAL_MIN_SHOW <- DF_TOTAL_MIN
+
+DF_TOTAL_MIN_SHOW <- cbind(States = c(2,2), DF_TOTAL_MIN_SHOW)
+
+names(DF_TOTAL_MIN_SHOW) <- (c("States", "model","pr_st1_p1", "pr_st1_p2", "pr_st2_p1", "pr_st2_p2", "minNegL", "AIC", "s1_p1", "s1_p2", "s2_p2", "s2_p2"))
+
+
+```
+
+
+```{r, echo=FALSE}
+#one state to compare the AIC VALUES...
+#his chunks runs the model. Here it is inactivated
+#but we can activate it with runModel <- yes. But for now, we load the result in the following chunk
+
+
+ #m_cosecha_oneState<- fitHMM(data = dataCosecha, stepDist = "gamma",  
+                       #nbStates = 1 , stepPar0 = c(5, 2), angleDist = "none")
+
+
+
+DF_TOTAL_ONESTATE <- data.frame("model"= 0, 
+            "prior_par0_st1"= 0,
+            "prior_par1_st1" = 0,
+           "minNegLike" = 0,
+           "AIC_model" = 0,
+           "st1_par0"= 0,
+           "st1_par1"=0)
+
+repetitions <- seq(1, 100,1)
+runModelSimple <- "yes"
+if (runModelSimple == "yes"){
+for (modelStep in c("weibull", "gamma")){
+  print(modelStep)
+  rangePar0 <- runif(100000, rangosDist[[modelStep]][[1]][1], rangosDist[[modelStep]][[1]][2])  #corre 100000 valores en el rango del parametro 0
+  rangePar1 <- runif(100000, rangosDist[[modelStep]][[2]][1], rangosDist[[modelStep]][[2]][2]) #corre 100000 valores en el rango del parametro 1
+  for (rep in repetitions){
+    par0 <- c(sample(rangePar0,1, replace= TRUE)) # step mean (one parameters: one for each state)
+    par1 <- c(sample(rangePar1,1, replace= TRUE))
+    par0 <- round(par0, 4)
+    par1 <- round(par1, 4)
+    #print(par0)
+    #print(par1)
+    stepPar <- c(par0,par1)
+  #op1
+    tryCatch({
+    m_cosecha_oneState<- fitHMM(data = dataCosecha, stepDist = modelStep,  
+                       nbStates = 1 , stepPar0 = stepPar, angleDist = "none")
+    },
+    error=function(cond){
+      print("error de parametros")
+      print(stepPar)
+      message(cond)
+    }
+    )
+    
+    minNegLike <-  m_cosecha_oneState$mod$minimum
+    AIC_model <- AIC(m_cosecha_oneState)
+    
+    DF_TEMP_ONESTATE <- data.frame("model"= modelStep, 
+                          "prior_par0_st1"= par0[1], 
+                          "prior_par1_st1"= par1[1],
+                          "minNegLike" = minNegLike,
+                          "AIC_model" = AIC_model,
+                          "st1_par0"= m_cosecha_oneState$mle$stepPar[1],
+                          "st1_par1"= m_cosecha_oneState$mle$stepPar[2])
+    
+                      
+    DF_TOTAL_ONESTATE <- rbind(DF_TOTAL_ONESTATE, DF_TEMP_ONESTATE)    
+    
+    
+      }
+}
+
+DF_TOTAL_ONESTATE <- DF_TOTAL_ONESTATE%>%
+  filter(model != 0)
+}
+#write_csv(DF_TOTAL_ONESTATE, "../output/wholeTableONESTATE_1000_rep_0_20.csv")
+```
+
+```{r}
+write_csv(DF_TOTAL_ONESTATE, paste("../output/wholeTableONESTATE_100_rep_0_20",as.character(mode), ".csv", sep = "_"))
+```
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+# here we add the one state 
+#DF_TOTAL_ONESTATE <- read.csv("../output/wholeTableONESTATE_100_rep_0_20_C_.csv")
+
+DF_TOTAL_MIN_ONESTATE <- DF_TOTAL_ONESTATE %>%
+  group_by(model)%>%
+  filter(AIC_model == min(AIC_model))
+
+DF_TOTAL_MIN_ONESTATE <- cbind(States = c(1,1), DF_TOTAL_MIN_ONESTATE)
+
+names(DF_TOTAL_MIN_ONESTATE) <- (c("States", "model","pr_st1_p1", "pr_st1_p2", "minNegL", "AIC", "s1_p1", "s1_p2"))
+
+DF_TOTAL_AIC <-  bind_rows(DF_TOTAL_MIN_SHOW, DF_TOTAL_MIN_ONESTATE)
+
+names(DF_TOTAL_AIC) <- (c("States", "model","pr_st1_p1", "pr_st1_p2", "pr_st2_p1", "pr_st2_p2", "minNegL", "AIC", "s1_p1", "s1_p2", "s2_p1", "s2_p2"))
+
+DF_TOTAL_AIC[, seq(3, 12)] <- round(DF_TOTAL_AIC[, seq(3, 12)], 2)
+
+kable(DF_TOTAL_AIC, caption = "Best models for each of the distributions. We added the prior parameters, the likelihood, AIC criteria and the final parameters. pr:prior, st1: state 1, p1: parameter 1 (shape for weibull and mean for gamma, p2: parameter 2 (scale for weibull and sd for gamma).")
+
+
+#write.csv(DF_TOTAL_AIC, "../output/DF_TOTAL_AIC.csv")
+
+
+```
+
+
+```{r}
+write_csv(DF_TOTAL_AIC, paste("../output/DF_TOTAL_AIC_100",as.character(mode), ".csv", sep = "_"))
+```
+
+#cargo las dos bases
+```{r}
+modelos_E <- read.csv("../output/DF_TOTAL_AIC_100_E_.csv")
+modelos_E$plantacion <- "Organic"
+modelos_C <- read.csv("../output/DF_TOTAL_AIC_100_C_.csv")
+modelos_C$plantacion <- "Conventional"
+
+
+modelos_T <- rbind(modelos_C, modelos_E)
+
+names(modelos_T) <- (c("States", "model","pr_st1_p1", "pr_st1_p2", "pr_st2_p1", "pr_st2_p2", "minNegL", "AIC", "s1_p1", "s1_p2", "s2_p1", "s2_p2", "plantation"))
+
+
+modelos_T_Gamma <- modelos_T %>%
+  filter(model == "gamma")
+
+modelos_T_Gamma$shape_st1 <- (modelos_T_Gamma$s1_p1*modelos_T_Gamma$s1_p1)/(modelos_T_Gamma$s1_p2*modelos_T_Gamma$s1_p2)
+modelos_T_Gamma$scale_st1 <- (modelos_T_Gamma$s1_p2*modelos_T_Gamma$s1_p2)/modelos_T_Gamma$s1_p1
+
+modelos_T_Gamma$shape_st2 <- (modelos_T_Gamma$s2_p1*modelos_T_Gamma$s2_p1)/(modelos_T_Gamma$s2_p2*modelos_T_Gamma$s2_p2)
+modelos_T_Gamma$scale_st2 <- (modelos_T_Gamma$s2_p2*modelos_T_Gamma$s2_p2)/modelos_T_Gamma$s2_p1
+
+modelos_T_Gamma$s1_p1 <- NULL
+modelos_T_Gamma$s1_p2 <- NULL
+modelos_T_Gamma$s2_p1 <- NULL
+modelos_T_Gamma$s2_p2 <- NULL
+
+
+
+modelos_T_Weibull <- modelos_T %>%
+  filter(model == "weibull")
+names(modelos_T_Weibull) <- (c("States", "model","pr_st1_p1", "pr_st1_p2", "pr_st2_p1", "pr_st2_p2", "minNegL", "AIC", "shape_st1", "scale_st1", "shape_st2", "scale_st2", "plantation"))
+
+modelos_T_new <- rbind(modelos_T_Gamma, modelos_T_Weibull)
+
+```
+```{r}
+write_csv(modelos_T_new, "../output/DF_TOTAL_AIC_2plantations.csv")
+```
+
+```{r}
+modelos_NEW <- read.csv("../output/DF_TOTAL_AIC_2plantations.csv")
+```
+
+
+
+\newpage
+
+## 2. Description of the states, for each studied distribution.
+
+We plotted the two state distributions for _gamma_ and _weibull_ families with the obtained final parameters (see figure. 6 and table 4). For both families, one of the states produced a distribution that encompass most of the highly frequent short steps and falls abruptly for size steps bigger than 13 m. The other state generates a long tailed distribution with a lower probability of short steps (compared to the other distribution) and a non zero probability for steps bigger than 13 m (Fig. 6 and table 4). This results show that from the movement of the harvesters (observations $Z_t$) we can extract two hidden markov states ($S_t$). The first state generate distributions with short steps (we can interpret this as harvesting the closest tree) and the second state generate longer steps (when the worker has to move to another part of the plot). This second state is highly unlikely (3.7% of steps in gamma distribution, 5.2% for weibull). Now, for the following analysis, we took only the gamma distribution as it presented a lower AIC.
+
+
+
+```{r echo=FALSE, message=FALSE}
+
+modelos_NEW <- read.csv("../output/DF_TOTAL_AIC_2plantations.csv")
+
+#here we generate the distributions with the obtained parameters 
+X= seq(1, 120, 1)
+
+DF_gamma_C_st1 <- data.frame("distribution"= c("gamma"), "plantation" = "C", "state" = 1, "X"= X,  "PDF" = dgamma(X, shape = 2.5, rate = 1/4.1))
+
+DF_gamma_C_st2 <- data.frame("distribution"= c("gamma"), "plantation" = "C", "state" = 2, "X"= X,  "PDF" = dgamma(X, shape= 4.9, rate = 1/0.7))
+
+DF_gamma_E_st1 <- data.frame("distribution"= c("gamma"), "plantation" = "E","state" = 1, "X"= X,  "PDF" = dgamma(X, shape = 1.13, rate = 1/29))
+
+DF_gamma_E_st2 <- data.frame("distribution"= c("gamma"), "plantation" = "E","state" = 2, "X"= X,  "PDF" = dgamma(X, shape= 3.2, rate = 1/1.6))
+
+
+
+DF_DISTRI <- rbind(DF_gamma_C_st1, DF_gamma_C_st2, DF_gamma_E_st1, DF_gamma_E_st2)
+```
+
+\newpage
+
+```{r echo=FALSE, warning=FALSE, fig.cap= "Two state model distributions. The used parameters are shown in Table 4", fig.height= 5, fig.width=10, message=FALSE}
+
+DIS_PLOT<- ggplot() +
+  #geom_histogram(data= dataCosecha, size= 0.2, aes(x= as.numeric(step), y=(..count..)/tapply(..count..,..PANEL..,sum)[..PANEL..]), binwidth=2, color= "white", fill= "#CCCCCC") +
+geom_line(data = DF_DISTRI, size= 1, aes(x= X, y= PDF, col= as.factor(state)))+
+  facet_grid(~ plantation, scales = "free_y")+
+  scale_color_manual(values = 
+                    groupColors2)+
+  theme_bw()+
+   labs(x= "Step size (in m)", y= "Probability Density Function", col= "State")
+
+DIS_PLOT
+
+```
+
+
+```{r, echo=FALSE, message=FALSE}
+modelos_p <- list("gamma" = 0, 
+     "weibull" = 0)
+
+for (i in seq(1,dim(DF_TOTAL_MIN)[1],1)){
+  par0_p <- as.numeric(c(DF_TOTAL_MIN$pr_par0_st1[i], DF_TOTAL_MIN$pr_par0_st2[i]))
+  par1_p <- as.numeric(c(DF_TOTAL_MIN$pr_par1_st1[i], DF_TOTAL_MIN$pr_par1_st2[i]))
+  stepPar0_p <- c(par0_p, par1_p)
+  #print(stepPar0_p)
+  #op1
+  m_cosecha_p<- fitHMM(data = dataCosecha, nbStates = 2 , stepPar0 = stepPar0_p, angleDist = "none", stepDist = as.character(DF_TOTAL_MIN$model[i]))
+  modelos_p[[as.character(DF_TOTAL_MIN$model[i])]] <- m_cosecha_p 
+}
+
+```
+
+
+```{r echo=FALSE, fig.cap="Distribution of states $St$ along two trajectories. Each color follow the code of colors of Fig.6 for the gamma distribution)", fig.keep=c(3,4), fig.show='hold', message=FALSE, out.width="50%"}
+
+#plotStates(modelos_p$gamma, ask = F, animals = c( "H_Fran9", "I_Car12"))
+
+plot(modelos_p$gamma, animals = c("C_2", "E_6"), ask = F, plotTracks = TRUE, breaks = 100, col = groupColors2, lwd=3.0)
+```
+
+\newpage
+
+## 3. Sequence of states and relation with the farms.
+
+With the Viterbi algorithm, the package _movehmm_ decodes the most likely sequence of states (assuming a markov chain) and the transitions matrix between hidden states. This takes into account the conditional probabilities between the observations and hidden states $P(Z_t|S_t))$ [@zucchini2016hidden]. In this sense, _movehmm_ can estimate the state with the highest probability for each step but this might not be the same as the state in the most probable sequence returned by the Viterbi algorithm (Fig. 8, second and third row vs first row). This is because the Viterbi algorithm performs “global decoding”, whereas the state probabilities are “local decoding”[@zucchini2016hidden, @michelot2019movehmm].
+
+```{r echo=FALSE, fig.cap="State probabilities for each step of E_6 trajectory and result of the Viterbi algorithm", fig.height= 4, fig.width=5, message=FALSE}
+plotStates(modelos_p$gamma, animals ="E_6", ask = F)
+```
+
+
+We finally plotted the sequence of the most likely states along each of the trajectories (Fig. 9) and estimate the probability of the most unlikely state (state 1, that represent the relocalization of the workers in the plot)- according to the farm the trajectory belonged to (Fig. 10). We note that the percentage of steps from state 1 correlates with the identity of the farm (Fig. 10): 4 out of 6 trajectories that belong to the Ecological Farm, presented a higher than the mean percentage of longer steps, compared to the Conventional Farm, where 5 out of 6 were below the mean. (__note__: in the main text the number of the states was inverted for practicality)).
+
+```{r echo=FALSE, fig.cap="Sequence of states along the trajectory in two different farms (C: Conventional, E: Ecological)", fig.height=4, fig.width=10}
+
+dataCosecha_V <- dataCosecha
+dataCosecha_V$state <- viterbi(modelos_p$gamma)
+
+dataCosecha_V <- dataCosecha_V %>%
+  mutate(conteo = 1)%>%
+  group_by(ID) %>%
+  mutate(contador = cumsum(conteo))
+  
+
+write.csv(dataCosecha_V, "../data/analyzedData_figures.csv")
+
+
+binaryPlot <- dataCosecha_V %>%
+  separate(ID, sep= "_", into = c("Farm", "ID"), remove = T) %>%
+  ggplot(aes(x= contador , y= ID, fill= as.factor(state)))+
+  geom_tile()+
+  facet_wrap(~Farm, scales= "free_y")+
+  scale_fill_manual(values= groupColors2)+
+  theme_bw()+
+   labs(x= "Steps", y= "ID", fill= "State", shape= "State")
+  
+binaryPlot
+###AQUI MEQEUDEEEEEE FALTA HACER LA GRAFICA DE PORCENTAJE; VS FINCA; VS LONGITUD DE RECPRRIDO Y YA
+
+
+```
+
+```{r echo=FALSE, message=FALSE}
+
+
+dataTempTot <-  dataCosecha_V %>%
+  group_by(ID)%>%
+  summarise(totalStep = sum(conteo)) 
+
+
+dataStates <- dataCosecha_V %>%
+  group_by(ID, state)%>%
+  summarise(numStates = sum(conteo)) 
+
+dataStates <- dataStates %>%
+  ungroup()%>%  #no entiendo que estaba agrupado, supongo que el ID con el state...
+  complete(ID, state)%>%
+  filter(state==1)
+
+
+dataStates$numStates[is.na(dataStates$numStates)] <- 0 
+
+dataStates$totalStep <- dataTempTot$totalStep
+dataStates$percentage_ST1 <- (dataStates$numStates/dataStates$totalStep)*100
+
+
+
+
+
+```
+
+
+```{r echo=FALSE, fig.cap= "Relation between the probability of state 1, the total number of steps and the farm (C: Conventional, E: Ecological). The dashed line represent the average percentage of steps that belong to state 1 (3.8%).", fig.height=4, fig.width=8}
+perST1_plot <- dataStates %>%
+  separate(ID, sep= "_", into = c("Farm", "ID"), remove = T) %>%
+  ggplot(col= "black", aes(x= totalStep , y= percentage_ST1, shape= as.factor(Farm), fill= as.factor(Farm)))+
+  geom_point(size= 3)+
+  geom_segment(aes(x= 60, xend= 160, y=3.8, yend= 3.8), linetype= 2)+
+  scale_fill_manual(values= mycols3c)+
+    scale_shape_manual(values = c(21, 24, 22))+
+  theme_bw()+
+  labs(x= "Total number of steps", y= "% of steps from State 1", fill= "Farm", shape= "Farm")
+  
+perST1_plot
+
+#https://cran.r-project.org/web/packages/moveHMM/vignettes/moveHMM-guide.pdf
+
+#https://theomichelot.github.io/software/
+
+
+#https://statisticsbyjim.com/probability/weibull-distribution/
+
+```
+
+
+\newpage
+
+## 4. References
+
+
+
+
+
