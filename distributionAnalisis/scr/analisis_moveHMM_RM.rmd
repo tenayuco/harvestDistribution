@@ -1,15 +1,16 @@
 ---
-title: "Supplementary Material 1. HMM analysis from: Harvesting trajectories in large-scale coffee plantations: ecological and managment drivers and implications"
-author: "Mora Van Cauwelaert et al., 2023"
+title: "Supplementary Material. State-space models with HMM from: Harvesting trajectories in large-scale coffee plantations: ecological and managment drivers and implications"
+author: "Emilio Mora Van Cauwelaert, Denis Boyer, Estelí Jiménez-Soto and Mariana Benítez"
 output:
   pdf_document: default
 bibliography: movehmm.bib
 ---
 
 
-## 0. Introduction to HMM
+## 0. Introduction to State-space models with HMM
 
-Hidden Markov models (HMMs) are models in which the distribution that generates an observation $Z_t$ depends on the state $S_t$ of an underlying and unobserved Markov process (Fig.1) [@zucchini2016hidden]. In this sense, the observations $Z_t$ can be retrieved from one to multiple distributions related to the number of states. In the context of animal movement, the state $S_t$ is interpreted as a proxy for the behavioral state of the animal (e.g. foraging, exploring; [@michelot2016movehmm]). The observations $Zt$ are bivariate time series ($Zt = (l_t, \phi_t)$) where $l_t$ is the step length (the Euclidean distance) and $\phi_t$ the turning angle, between two succesive locations [@michelot2019movehmm, @zucchini2016hidden]. Biologically speaking, these models try to include the process where the movement of agents (e.g. short or large steps) depends on its behavior. With these models, we can define the different originary distributions and then decode the most likely sequence of states along the trajectory of an agent, its average time within a state, and the number of switches between states.  
+
+State space models coupled with hidden Markov models (HMMs) are models in which the distribution that generates an observation $Z_t$ depends on the state $S_t$ of an underlying and unobserved Markov process (Fig.1) [@zucchini2016hidden]. In this sense, the observations $Z_t$ can be retrieved from one to multiple distributions related to the number of states. In the context of animal movement, the state $S_t$ is interpreted as a proxy for the behavioral state of the animal (e.g. foraging, exploring; [@michelot2016movehmm]). The observations $Zt$ are bivariate time series ($Zt = (l_t, \phi_t)$) where $l_t$ is the step length (the Euclidean distance) and $\phi_t$ the turning angle, between two succesive locations [@michelot2019movehmm, @zucchini2016hidden]. Biologically speaking, these models try to include the process where the movement of agents (e.g. short or large steps) depends on its behavior. With these models, we can define the different originary distributions and then decode the most likely sequence of states along the trajectory of an agent, its average time within a state, and the number of switches between states.  
 
 ![Process generating the observations in a two-state HMM. The chain followed the path 2, 1, 1, 1, 2, 1, as indicated on the left. The corresponding state-dependent distributions are shown in the middle. The observations are generated from the corresponding active distributions. Taken from (Zucchini, 2016)](hmmFullfigure.png){width=50%}
 
