@@ -34,6 +34,8 @@ library(knitr)
 library(reshape2)
 colorsGris <- c("black","#555555", "white")
 groupColors3 <- c("#021128", "#fd9706", "#1b4a64" )
+groupColors4 <- c("#1b4a64", "#fdb81c")
+
 groupColors2 <- c("#021128", "#fd9706")
 mycols3c <-c("#759580", "#1b4a64")
 ```
@@ -60,8 +62,8 @@ WP_COSECHA_UTM_SP <- WP_COSECHA_UTM_SP %>%
 
 
   
-WP_COSECHA_UTM_SP <- WP_COSECHA_UTM_SP %>%
-  filter(finca == mode)
+#WP_COSECHA_UTM_SP <- WP_COSECHA_UTM_SP %>%
+ # filter(finca == mode)
 
 
 
@@ -184,7 +186,7 @@ DF_TOTAL <- data.frame("model"= 0,
            "st2_par1"= 0)
 
 repetitions <- seq(1, 100,1)
-runModel <- "yes"
+runModel <- "no"
 if (runModel == "yes"){
 for (modelStep in c("weibull", "gamma")){
   print(modelStep)
@@ -384,7 +386,7 @@ DF_TOTAL_ONESTATE <- data.frame("model"= 0,
            "st1_par1"=0)
 
 repetitions <- seq(1, 100,1)
-runModelSimple <- "yes"
+runModelSimple <- "no"
 if (runModelSimple == "yes"){
 for (modelStep in c("weibull", "gamma")){
   print(modelStep)
@@ -546,17 +548,96 @@ DF_DISTRI <- rbind(DF_gamma_C_st1, DF_gamma_C_st2, DF_gamma_E_st1, DF_gamma_E_st
 \newpage
 
 ```{r echo=FALSE, warning=FALSE, fig.cap= "Two state model distributions. The used parameters are shown in Table 4", fig.height= 5, fig.width=10, message=FALSE}
+dataCosecha2 <- dataCosecha %>%
+  separate(ID, into = c("plantation", "id_farm"), sep = "_", remove = F)
 
-DIS_PLOT<- ggplot() +
-  #geom_histogram(data= dataCosecha, size= 0.2, aes(x= as.numeric(step), y=(..count..)/tapply(..count..,..PANEL..,sum)[..PANEL..]), binwidth=2, color= "white", fill= "#CCCCCC") +
-geom_line(data = DF_DISTRI, size= 1, aes(x= X, y= PDF, col= as.factor(state)))+
-  facet_grid(~ plantation, scales = "free_y")+
-  scale_color_manual(values = 
-                    groupColors2)+
+
+```
+
+
+```{r echo=FALSE, warning=FALSE, fig.cap= "Two state model distributions. The used parameters are shown in Table 4", fig.height= 5, fig.width=10, message=FALSE}
+dataCosecha2_E <- dataCosecha2 %>%
+  filter(plantation == "E")
+DF_DISTRI_E <-DF_DISTRI  %>%
+  filter(plantation == "E")
+dataCosecha2_C <- dataCosecha2 %>%
+  filter(plantation == "C")
+DF_DISTRI_C <- DF_DISTRI %>%
+  filter(plantation == "C")
+```
+
+
+```{r echo=FALSE, warning=FALSE, fig.cap= "Two state model distributions. The used parameters are shown in Table 4", fig.height= 5, fig.width=10, message=FALSE}
+CAJADIST_E<- dataCosecha2_E %>%
+  ggplot()+
+  geom_boxplot(aes(x= step), fill= "#EEEEEE")+ 
   theme_bw()+
-   labs(x= "Step size (in m)", y= "Probability Density Function", col= "State")
+  theme(text = element_text(size = 20))+ 
+  theme(axis.ticks.y = element_blank(),
+        axis.text.y = element_blank())+
+  xlim(0, 120)+
+  labs(x= "Step length (m)", y= "")
 
-DIS_PLOT
+
+DIS_PLOT_E<- dataCosecha2_E %>%
+  ggplot() +
+  geom_histogram(size= 0.2, 
+                 aes(x= as.numeric(step), 
+                     y=(..count..)/tapply(..count..,..PANEL..,sum)[..PANEL..]), 
+                 binwidth=1, color= "black", fill= "#EEEEEE") +
+  geom_line(data = DF_DISTRI_E, size= 0.8, aes(x= X, y= PDF, col= as.factor(state)))+
+  scale_color_manual(values = 
+                       mycols3c)+
+  facet_wrap(~plantation)+
+  ylim(0, 0.32)+
+  theme_bw()+
+  theme(text = element_text(size = 20))+
+  labs(x= "Step length (m)", y= "Frequency", col= "State")
+
+
+DIS_PLOT_COM_E <- DIS_PLOT_E + annotation_custom(ggplotGrob(CAJADIST_E), xmin = 15, xmax = 100, ymin = 0.1, ymax = 0.2)
+
+
+```
+
+```{r}
+CAJADIST_C<- dataCosecha2_C %>%
+  ggplot()+
+  geom_boxplot(aes(x= step), fill= "#EEEEEE")+ 
+  theme_bw()+
+  theme(text = element_text(size = 20))+ 
+  theme(axis.ticks.y = element_blank(),
+        axis.text.y = element_blank())+
+  xlim(0, 120)+
+  labs(x= "Step length (m)", y= "")
+
+
+DIS_PLOT_C<- dataCosecha2_C %>%
+  ggplot() +
+  geom_histogram(size= 0.2, 
+                 aes(x= as.numeric(step), 
+                     y=(..count..)/tapply(..count..,..PANEL..,sum)[..PANEL..]), 
+                 binwidth=1, color= "black", fill= "#EEEEEE") +
+  geom_line(data = DF_DISTRI_C, size= 0.8, aes(x= X, y= PDF, col= as.factor(state)))+
+  scale_color_manual(values = 
+                       groupColors2)+
+  facet_wrap(~plantation)+
+  ylim(0, 0.32)+
+  theme_bw()+
+  theme(text = element_text(size = 20))+
+  labs(x= "Step length (m)", y= "Frequency", col= "State")
+
+
+DIS_PLOT_COM_C <- DIS_PLOT_C + annotation_custom(ggplotGrob(CAJADIST_C), xmin = 15, xmax = 100, ymin = 0.1, ymax = 0.2)
+
+```
+
+```{r}
+library(patchwork)
+DIS_PLOT_TOTAL <- DIS_PLOT_COM_C + DIS_PLOT_COM_E
+
+
+ggsave(DIS_PLOT_TOTAL, filename= "../output/finalFigures/histoGAMMA_porPlantacion.png", height = 6, width = 15, device = "png")
 
 ```
 
@@ -584,6 +665,12 @@ for (i in seq(1,dim(DF_TOTAL_MIN)[1],1)){
 
 plot(modelos_p$gamma, animals = c("C_2", "E_6"), ask = F, plotTracks = TRUE, breaks = 100, col = groupColors2, lwd=3.0)
 ```
+
+
+
+
+
+
 
 \newpage
 
