@@ -10,7 +10,7 @@ DF_TOTAL_MIN$st2_par1 <- as.numeric(DF_TOTAL_MIN$st2_par1)
 MIN_gamma_2 <- DF_TOTAL_MIN %>%
   filter(states == 2)%>%
   filter(model == "gamma")
-#here we generate the distributions with the obtained parameters 
+#here we generate the distributions with the sobtained parameters 
 
 ##now!! it is important to recall that the program gives us the mean adn the sd fro garmma. To transform and pĺot we havve 
 # shape α = µ2 /σ 2
