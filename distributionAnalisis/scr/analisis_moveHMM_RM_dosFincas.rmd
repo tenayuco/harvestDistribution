@@ -500,7 +500,7 @@ DF_TOTAL_MIN_2_F <- DF_TOTAL_MIN_2 %>%filter (farm == as.character(mode))
 #modelos_p <- list("gamma" = 0, 
 #     "weibull" = 0)
 
-modelos_p <- list("gamma" = 0)
+#modelos_p <- list("gamma" = 0)
 
 par0_p <- as.numeric(c(DF_TOTAL_MIN_2_F$prior_par0_st1, DF_TOTAL_MIN_2_F$prior_par0_st2))
 par1_p <- as.numeric(c(DF_TOTAL_MIN_2_F$prior_par1_st1, DF_TOTAL_MIN_2_F$prior_par1_st2))
@@ -509,12 +509,14 @@ par1_p <- as.numeric(c(DF_TOTAL_MIN_2_F$prior_par1_st1, DF_TOTAL_MIN_2_F$prior_p
   stepPar0_p <- c(par0_p, par1_p)
   #print(stepPar0_p)
   #op1
-  m_cosecha_p<- fitHMM(data = dataCosecha, nbStates = 2 , stepPar0 = stepPar0_p, angleDist = "none", stepDist = as.character(DF_TOTAL_MIN_2$model))
-  modelos_p[[as.character(DF_TOTAL_MIN_2$model[i])]] <- m_cosecha_p 
+  m_cosecha_p<- fitHMM(data = dataCosecha, nbStates = 2 , stepPar0 = stepPar0_p, angleDist = "none", stepDist = as.character(DF_TOTAL_MIN_2_F$model))
+ # modelos_p[[as.character(DF_TOTAL_MIN_2$model[i])]] <- m_cosecha_p 
+
+modelos[[as.character(mode)]] <- m_cosecha_p ##segun el articulo es imporatnte el doble corchete para que meta toda lalista
 
 
 dataCosecha_V <- dataCosecha
-dataCosecha_V$state <- viterbi(modelos_p$gamma)
+dataCosecha_V$state <- viterbi(m_cosecha_p)
 
 dataCosecha_V <- dataCosecha_V %>%
   mutate(conteo = 1)%>%
@@ -523,7 +525,6 @@ dataCosecha_V <- dataCosecha_V %>%
   
 write.csv(dataCosecha_V, paste("../data/analyzedData_figuresFINCA", as.character(mode),".csv", sep = "_"))
 
-modelos[as.character(mode)] <- modelos_p ##segun el articulo
 
 }
 
@@ -555,7 +556,11 @@ plot(modelos$E, ask = F, plotTracks = TRUE, breaks = 100, col = groupColors2, lw
 With the Viterbi algorithm, the package _movehmm_ decodes the most likely sequence of states (assuming a markov chain) and the transitions matrix between hidden states. This takes into account the conditional probabilities between the observations and hidden states $P(Z_t|S_t))$ [@zucchini2016hidden]. In this sense, _movehmm_ can estimate the state with the highest probability for each step but this might not be the same as the state in the most probable sequence returned by the Viterbi algorithm (Fig. 8, second and third row vs first row). This is because the Viterbi algorithm performs “global decoding”, whereas the state probabilities are “local decoding”[@zucchini2016hidden, @michelot2019movehmm].
 
 ```{r echo=FALSE, fig.cap="State probabilities for each step of E_6 trajectory and result of the Viterbi algorithm", fig.height= 4, fig.width=5, message=FALSE}
-plotStates(modelos_p$gamma, animals ="E_6", ask = F)
+plotStates(modelos$C, animals ="C_6", ask = F)
+```
+
+```{r echo=FALSE, fig.cap="State probabilities for each step of E_6 trajectory and result of the Viterbi algorithm", fig.height= 4, fig.width=5, message=FALSE}
+plotStates(modelos$E, animals ="E_6", ask = F)
 ```
 
 
