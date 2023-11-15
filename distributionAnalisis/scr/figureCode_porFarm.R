@@ -167,6 +167,7 @@ DIS_PLOT_O<- DF_HARVEST_GAMMA %>%
   theme_bw()+
   theme(text = element_text(size = 20))+
   theme(axis.title.y = element_blank())+
+  theme(strip.background =element_rect(fill="white"))+
   labs(x= "Step length (m)", y= "Frequency", col= "State")
 
 
@@ -200,6 +201,7 @@ DIS_PLOT_C<- DF_HARVEST_GAMMA %>%
   theme_bw()+
   theme(text = element_text(size = 20))+
   theme(legend.position = "none")+
+  theme(strip.background =element_rect(fill="white"))+
   labs(x= "Step length (m)", y= "Frequency", col= "State")
 
 
@@ -214,3 +216,65 @@ ggsave(DIS_PLOT_TOTAL, filename= "../output/finalFigures/histoGAMMA_porPlantacio
 
 ####################
 
+
+binaryPlot <- DF_HARVEST_GAMMA %>%
+  unite("farm_ID", c(farm, IDREC),remove = FALSE) %>% 
+  ggplot(aes(x= contador , y= farm_ID, fill= as.factor(state)))+
+  geom_tile(col= "black")+
+  facet_wrap(~farm, scales= "free_y", ncol= 1)+
+  scale_fill_manual(values= c("#FFFFFF", "black"))+
+ # scale_y_continuous(breaks=seq(1,6,1))+
+  theme_bw()+
+  theme(strip.background =element_rect(fill="white"))+
+  theme(text = element_text(size = 20))+
+  #theme(legend.position = "bottom")+
+  labs(x= "Steps", y= "ID", fill= "State", shape= "State")
+
+
+
+
+DF_HARVEST_GAMMA_RES_2 <- DF_HARVEST_GAMMA %>%
+  group_by(state, farm, IDREC) %>%
+  summarise(meanStep = mean(step), numStates = sum(conteo))
+
+
+
+DF_HARVEST_GAMMA_RES_2_S <- DF_HARVEST_GAMMA_RES_2 %>%
+  ungroup()%>%  #no entiendo que estaba agrupado, supongo que el ID con el state...
+  complete(farm, IDREC, state)%>%
+  filter(state=="Search")
+
+
+DF_HARVEST_GAMMA_RES_2_S$numStates[is.na(DF_HARVEST_GAMMA_RES_2_S$numStates)] <- 0 
+DF_HARVEST_GAMMA_RES_2_S$meanStep[is.na(DF_HARVEST_GAMMA_RES_2_S$meanStep)] <- 0 
+
+mediaGeneral <- mean(DF_HARVEST_GAMMA_RES_2_S$meanStep)
+
+dataTempTot <-  DF_HARVEST_GAMMA %>%
+  group_by(farm, IDREC) %>%
+  summarise(totalStep = sum(conteo)) 
+
+DF_HARVEST_GAMMA_RES_2_S$totalStep <- dataTempTot$totalStep
+
+DF_HARVEST_GAMMA_RES_2_S$percentage_ST2 <- (DF_HARVEST_GAMMA_RES_2_S$numStates/DF_HARVEST_GAMMA_RES_2_S$totalStep)*100
+
+#VERIFICAR ESTO  
+
+HIST_ST1 <- DF_HARVEST_GAMMA_RES_2_S %>%
+  ggplot(col= "black", aes(x= farm, y= meanStep, 
+  ))+
+  geom_boxplot(aes(fill= as.factor(farm)))+ 
+  geom_point(size= 3, aes(fill= as.factor(farm)), shape= 21)+
+  
+  geom_segment(aes(x= 0, xend= 3, y=mediaGeneral, yend= mediaGeneral), linetype= 2)+
+  scale_fill_manual(values= c("#AAAAAA", "white"))+
+  theme_bw()+
+  theme(text = element_text(size = 20))+
+  theme(legend.position = "None")+
+  labs(x= "Plantation", y= "Total distance  of steps in state Search", fill= "Plantation")
+
+
+
+FIG_STATES <- binaryPlot + HIST_ST1 + plot_layout(widths = c(2, 1))
+
+ggsave(FIG_STATES, filename= "../output/finalFigures/figStates_porFinca.pdf", height = 6, width = 12, device = "pdf")
