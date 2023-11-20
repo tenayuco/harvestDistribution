@@ -1,4 +1,3 @@
-
 library(patchwork)
 library(ggplot2)
 library(dplyr)
@@ -14,9 +13,11 @@ mycols3c <-c("#759580", "#1b4a64")
 mycolsStates <-c("#fd9706", "#1b4a64" )
 
 
+#1. We first import our data base with the states assigned (from the 2 fincas analysis)
 
 #DF_HARVEST_GAMMA_E <- read.csv("/home/emilio/archivosTrabajandose/harvestDistribution/distributionAnalisis/data/analyzedData_figuresFINCA_E_.csv")
 #DF_HARVEST_GAMMA_C <- read.csv("/home/emilio/archivosTrabajandose/harvestDistribution/distributionAnalisis/data/analyzedData_figuresFINCA_C_.csv")
+
 
 DF_HARVEST_GAMMA_E <- read.csv("../data/analyzedData_figuresFINCA_E_.csv")
 DF_HARVEST_GAMMA_C <- read.csv("../data/analyzedData_figuresFINCA_C_.csv")
@@ -26,35 +27,25 @@ DF_HARVEST_GAMMA <- rbind(DF_HARVEST_GAMMA_E, DF_HARVEST_GAMMA_C)
 
 rm(DF_HARVEST_GAMMA_C)
 rm(DF_HARVEST_GAMMA_E)
-#DF_HARVEST_GAMMA_E <- read.csv("../data")
 
-
-#aqui invierto el 1 con el 2 por medio de una funcon linea
-
-#DF_HARVEST_GAMMA$state <-  (-DF_HARVEST_GAMMA$state) + 3
-
-## Y agrego el nombre (long y short step)
-#ver bien cuál quiero
 
 DF_HARVEST_GAMMA$state[DF_HARVEST_GAMMA$state == "1"] <- "Collect"
 DF_HARVEST_GAMMA$state[DF_HARVEST_GAMMA$state == "2"] <- "Search"
 
-
-
+#We separte the ID to have more flexibilty
 DF_HARVEST_GAMMA <- DF_HARVEST_GAMMA %>%
   separate(ID, into = c("farm", "IDREC"), sep = "_", remove = T)
 
-#DF_HARVEST_GAMMA$farm[DF_HARVEST_GAMMA$farm== "H"] <- "C"
+#We change the name of the rfam
 DF_HARVEST_GAMMA$farm[DF_HARVEST_GAMMA$farm== "E"] <- "O"
 
+#this is made to know the number of steps per fram
 DF_HARVEST_RESUMEN <- DF_HARVEST_GAMMA %>%
   group_by(farm, IDREC)%>%
   summarise(observation = sum(conteo)) %>%
   unite("farm_ID", c(farm, IDREC))
 
-
-
-
+#we plot the states. It is important to notice that states do not represent the same
 FIG_MAP_GAMMA<- DF_HARVEST_GAMMA %>% 
   unite("farm_ID", c(farm, IDREC)) %>% 
   ggplot(aes(x= x, y = y)) +
@@ -74,8 +65,16 @@ FIG_MAP_GAMMA<- DF_HARVEST_GAMMA %>%
 #ggsave(FIG_MAP_GAMMA, filename= "/home/emilio/archivosTrabajandose/harvestDistribution/distributionAnalisis/output/finalFigures/mapHarvest_porFarm.png", height = 14, width = 12.5, device = "png")
 ggsave(FIG_MAP_GAMMA, filename= "../output/finalFigures/mapHarvest_porFarm.png", height = 14, width = 12.5, device = "png")
 
+#this is to know the range and mean for each satae
+DF_RESUMEN_STATE <- DF_HARVEST_GAMMA %>%
+  group_by(farm, state) %>%
+  summarise(meanDistance = mean(step), sdDistance = sd(step), minDistance = min(step), maxDistance = max(step), numStates = sum(conteo))
+
+write.csv(DF_RESUMEN_STATE, file = "../data/df_resumen_perState.csv")
 
 ################################################################################33
+#2. We plot the distributions
+
 
 #DF_TOTAL_MIN <- read.csv("archivosTrabajandose/harvestDistribution/distributionAnalisis/output/DF_TOTAL_AIC_porFincas.csv")
 DF_TOTAL_MIN <- read.csv("../output/DF_TOTAL_AIC_porFincas.csv")
@@ -213,40 +212,32 @@ DIS_PLOT_TOTAL <- DIS_PLOT_COM_C + DIS_PLOT_COM_O
 ggsave(DIS_PLOT_TOTAL, filename= "../output/finalFigures/histoGAMMA_porPlantacion.png", height = 6, width = 15, device = "png")
 
 
-####################
+######################################################################3
+
+##3. We analize the areas diferences, according to different grain or rust transmision 
 
 
-binaryPlot <- DF_HARVEST_GAMMA %>%
-  unite("farm_ID", c(farm, IDREC),remove = FALSE) %>% 
-  ggplot(aes(x= contador , y= farm_ID, fill= as.factor(state)))+
-  geom_tile(col= "black")+
-  facet_wrap(~farm, scales= "free_y", ncol= 1)+
-  scale_fill_manual(values= c("#FFFFFF", "black"))+
- # scale_y_continuous(breaks=seq(1,6,1))+
-  theme_bw()+
-  theme(strip.background =element_rect(fill="white"))+
-  theme(text = element_text(size = 20))+
-  #theme(legend.position = "bottom")+
-  labs(x= "Steps", y= "ID", fill= "State", shape= "State")
-
-
-#esto para comparar los resultados del modelo . no se hacen pruebas
-DF_RESUMEN_STATE <- DF_HARVEST_GAMMA %>%
-  group_by(farm, state) %>%
-  summarise(meanDistance = mean(step), minDistance = min(step), maxDistance = max(step), numStates = sum(conteo))
 
 
 ##comparacion entre areas vs distancia por farm sin considerar state
-
-DF_HARVEST_GAMMA$x_area <- round(DF_HARVEST_GAMMA$x/3)
-DF_HARVEST_GAMMA$y_area <- round(DF_HARVEST_GAMMA$y/3)
-DF_HARVEST_GAMMA <- DF_HARVEST_GAMMA %>%
-  unite(sec_area, c(x_area, y_area), sep = "_")
 
 DF_HARVEST_GAMMA_RES <- DF_HARVEST_GAMMA %>%
   group_by(farm, IDREC) %>%
   summarise(distance = sum(step), numStates = sum(conteo))
 
+DF_HARVEST_TOTAL <- DF_HARVEST_GAMMA_RES
+DF_HARVEST_TOTAL$AR <- 0
+
+
+for (AR in c(1,2.5, 5, 10, 20, 40)){ 
+
+  DF_H_T <- DF_HARVEST_GAMMA_RES
+  DF_H_T$AR <- AR
+    
+DF_HARVEST_GAMMA$x_area <- round(DF_HARVEST_GAMMA$x/AR)
+DF_HARVEST_GAMMA$y_area <- round(DF_HARVEST_GAMMA$y/AR)
+DF_HARVEST_GAMMA <- DF_HARVEST_GAMMA %>%
+  unite(sec_area, c(x_area, y_area), sep = "_")
 
 DF_HARVEST_GAMMA_AREA <- DF_HARVEST_GAMMA %>%
   group_by(farm, IDREC, sec_area)%>%
@@ -257,19 +248,26 @@ DF_HARVEST_GAMMA_AREA <- DF_HARVEST_GAMMA_AREA  %>%
   group_by(farm, IDREC)%>%
   summarise(conteoArea = sum(conteo))
 
-DF_HARVEST_GAMMA_RES$conteoArea <- DF_HARVEST_GAMMA_AREA$conteoArea
+print(AR)
+
+DF_H_T$conteoArea <- DF_HARVEST_GAMMA_AREA$conteoArea
 
 rm(DF_HARVEST_GAMMA_AREA)
 
-
-
-
-
 ###############
 
-DF_HARVEST_GAMMA_RES$areaNorm <- DF_HARVEST_GAMMA_RES$conteoArea/DF_HARVEST_GAMMA_RES$numStates
+DF_H_T$areaNorm <- DF_H_T$conteoArea/DF_H_T$numStates
 
-HIST_ST1 <- DF_HARVEST_GAMMA_RES %>%
+DF_HARVEST_TOTAL <- rbind(DF_HARVEST_TOTAL, DF_H_T)
+
+}
+
+DF_HARVEST_TOTAL <- DF_HARVEST_TOTAL %>%
+  filter(AR !=0)
+
+
+
+HIST_ST1 <- DF_HARVEST_TOTAL %>%
   ggplot(col= "black", aes(x= farm, y= areaNorm, 
   ))+
   geom_boxplot(aes(fill= as.factor(farm)))+ 
@@ -277,48 +275,68 @@ HIST_ST1 <- DF_HARVEST_GAMMA_RES %>%
   
   #geom_segment(aes(x= 0, xend= 3, y=mediaGeneral, yend= mediaGeneral), linetype= 2)+
   scale_fill_manual(values= c("#AAAAAA", "white"))+
-#  facet_wrap(~f)+
+  facet_wrap(~AR, nrow = 1)+
   theme_bw()+
+  theme(strip.background =element_rect(fill="white"))+
   theme(text = element_text(size = 20))+
   theme(legend.position = "None")+
-  labs(x= "Plantation", y= "Normalized area traveled (in 10 m2 per step)", fill= "Plantation")
+  theme(plot.title = element_text(hjust = 0.5))+
+  theme(panel.spacing = unit(0, "lines"))+
+  labs(x= "Plantation", y= "Normalized number of squares visited", fill= "Plantation", title = "Length of the square grain (in m)")
+
+ggsave(HIST_ST1, filename= "../output/finalFigures/figStates_porFinca_porGrano.png", height = 6, width = 12, device = "png")
+
+write_csv(DF_HARVEST_TOTAL, file = "../data/areaPorGrano.csv")
 
 
 
-FIG_STATES <- binaryPlot + HIST_ST1 + plot_layout(widths = c(2, 1))
 
-ggsave(FIG_STATES, filename= "../output/finalFigures/figStates_porFinca.pdf", height = 6, width = 12, device = "pdf")
+#binaryPlot <- DF_HARVEST_GAMMA %>%
+ # unite("farm_ID", c(farm, IDREC),remove = FALSE) %>% 
+  #ggplot(aes(x= contador , y= farm_ID, fill= as.factor(state)))+
+  #geom_tile(col= "black")+
+  #facet_wrap(~farm, scales= "free_y", ncol= 1)+
+  #scale_fill_manual(values= c("#FFFFFF", "black"))+
+  # scale_y_continuous(breaks=seq(1,6,1))+
+  #theme_bw()+
+  #theme(strip.background =element_rect(fill="white"))+
+  #theme(text = element_text(size = 20))+
+  #theme(legend.position = "bottom")+
+  #labs(x= "Steps", y= "ID", fill= "State", shape= "State")
 
 
+#FIG_STATES <- binaryPlot + HIST_ST1 + plot_layout(widths = c(2, 1))
 
-DF_RESUMEN <- DF_HARVEST_GAMMA_RES %>%
-  group_by(farm) %>%
-  summarise(meanTrees = mean(numStates), sdTrees = sd(numStates), meanArea = mean(conteoArea), sdArea = sd(conteoArea), meanAreaNorm = mean(areaNorm), sdAreaNorm = sd(areaNorm
-                                                                                                                                                                    ))
+#ggsave(FIG_STATES, filename= "../output/finalFigures/figStates_porFinca.pdf", height = 6, width = 12, device = "pdf")
 
+
+#DF_RESUMEN <- DF_HARVEST_GAMMA_RES %>%
+ # group_by(farm) %>%
+  #summarise(meanTrees = mean(numStates), sdTrees = sd(numStates), meanArea = mean(conteoArea), sdArea = sd(conteoArea), meanAreaNorm = mean(areaNorm), sdAreaNorm = sd(areaNorm  ))
+                                                                                                                                                                  
 
 
 ######################3333
 
 
-
-FIG_MAP_CONTEO <- DF_HARVEST_GAMMA %>% 
-  #filter(state == "Collect")%>% 
-  unite("farm_ID", c(farm, IDREC)) %>% 
-  ggplot(aes(x= x, y = y)) +
-  geom_path(aes(col= as.factor(state)), size= 0.5)+
-  geom_point(size=0.5, aes(fill= "Visited Tree"))+ # es importante que sea path, porque así lo hace según coo estan ordenados los
-  scale_color_manual(values= mycolsStates)+
-  facet_wrap(~farm_ID, ncol = 3)+
-  geom_text(x = 140, y = 10, aes(label = observation), data = DF_HARVEST_RESUMEN)+
-  geom_text(x = 125, y = 10, label= "N =")+
-  theme_bw()+
-  theme(text = element_text(size = 15))+
-  theme(strip.background =element_rect(fill="white"))+
-  scale_y_continuous(breaks = seq(0, 120, by = 10))+
-  scale_x_continuous(breaks = seq(0, 150, by = 10))+
-  theme(panel.grid.major = element_line(color = "red",
-                                        size = 0.5,
-                                        linetype = 1))+
-  #theme(strip.background = element_blank(), panel.spacing = unit(0.8, "lines"), text = element_text(size = 15))+
-  labs(x= "X (in m)", y= "Y (in m)", col= "State", fill= "")
+# 
+# FIG_MAP_CONTEO <- DF_HARVEST_GAMMA %>% 
+#   #filter(state == "Collect")%>% 
+#   unite("farm_ID", c(farm, IDREC)) %>% 
+#   ggplot(aes(x= x, y = y)) +
+#   geom_path(aes(col= as.factor(state)), size= 0.5)+
+#   geom_point(size=0.5, aes(fill= "Visited Tree"))+ # es importante que sea path, porque así lo hace según coo estan ordenados los
+#   scale_color_manual(values= mycolsStates)+
+#   facet_wrap(~farm_ID, ncol = 3)+
+#   geom_text(x = 140, y = 10, aes(label = observation), data = DF_HARVEST_RESUMEN)+
+#   geom_text(x = 125, y = 10, label= "N =")+
+#   theme_bw()+
+#   theme(text = element_text(size = 15))+
+#   theme(strip.background =element_rect(fill="white"))+
+#   scale_y_continuous(breaks = seq(0, 120, by = 10))+
+#   scale_x_continuous(breaks = seq(0, 150, by = 10))+
+#   theme(panel.grid.major = element_line(color = "red",
+#                                         size = 0.5,
+#                                         linetype = 1))+
+#   #theme(strip.background = element_blank(), panel.spacing = unit(0.8, "lines"), text = element_text(size = 15))+
+#   labs(x= "X (in m)", y= "Y (in m)", col= "State", fill= "")
