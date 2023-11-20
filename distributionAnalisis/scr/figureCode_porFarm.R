@@ -22,7 +22,6 @@ DF_HARVEST_GAMMA_E <- read.csv("../data/analyzedData_figuresFINCA_E_.csv")
 DF_HARVEST_GAMMA_C <- read.csv("../data/analyzedData_figuresFINCA_C_.csv")
 
 
-
 DF_HARVEST_GAMMA <- rbind(DF_HARVEST_GAMMA_E, DF_HARVEST_GAMMA_C)
 
 rm(DF_HARVEST_GAMMA_C)
@@ -161,7 +160,7 @@ DIS_PLOT_O<- DF_HARVEST_GAMMA %>%
                  binwidth=1, color= "black", fill= "#EEEEEE") +
   geom_line(data = DF_DISTRI_O, size= 0.8, aes(x= X, y= PDF, col= as.factor(state)))+
   scale_color_manual(values = 
-                       groupColors2)+
+                       mycolsStates)+
   facet_wrap(~farm)+
   ylim(0, 0.32)+
   theme_bw()+
@@ -195,7 +194,7 @@ DIS_PLOT_C<- DF_HARVEST_GAMMA %>%
                  binwidth=1, color= "black", fill= "#EEEEEE") +
   geom_line(data = DF_DISTRI_C, size= 0.8, aes(x= X, y= PDF, col= as.factor(state)))+
   scale_color_manual(values = 
-                       groupColors2)+
+                       mycolsStates)+
   facet_wrap(~farm)+
   ylim(0, 0.32)+
   theme_bw()+
@@ -231,50 +230,95 @@ binaryPlot <- DF_HARVEST_GAMMA %>%
   labs(x= "Steps", y= "ID", fill= "State", shape= "State")
 
 
+#esto para comparar los resultados del modelo . no se hacen pruebas
+DF_RESUMEN_STATE <- DF_HARVEST_GAMMA %>%
+  group_by(farm, state) %>%
+  summarise(meanDistance = mean(step), minDistance = min(step), maxDistance = max(step), numStates = sum(conteo))
 
 
-DF_HARVEST_GAMMA_RES_2 <- DF_HARVEST_GAMMA %>%
-  group_by(state, farm, IDREC) %>%
-  summarise(meanStep = mean(step), numStates = sum(conteo))
+##comparacion entre areas vs distancia por farm sin considerar state
 
+DF_HARVEST_GAMMA$x_area <- round(DF_HARVEST_GAMMA$x/3)
+DF_HARVEST_GAMMA$y_area <- round(DF_HARVEST_GAMMA$y/3)
+DF_HARVEST_GAMMA <- DF_HARVEST_GAMMA %>%
+  unite(sec_area, c(x_area, y_area), sep = "_")
 
-
-DF_HARVEST_GAMMA_RES_2_S <- DF_HARVEST_GAMMA_RES_2 %>%
-  ungroup()%>%  #no entiendo que estaba agrupado, supongo que el ID con el state...
-  complete(farm, IDREC, state)%>%
-  filter(state=="Search")
-
-
-DF_HARVEST_GAMMA_RES_2_S$numStates[is.na(DF_HARVEST_GAMMA_RES_2_S$numStates)] <- 0 
-DF_HARVEST_GAMMA_RES_2_S$meanStep[is.na(DF_HARVEST_GAMMA_RES_2_S$meanStep)] <- 0 
-
-mediaGeneral <- mean(DF_HARVEST_GAMMA_RES_2_S$meanStep)
-
-dataTempTot <-  DF_HARVEST_GAMMA %>%
+DF_HARVEST_GAMMA_RES <- DF_HARVEST_GAMMA %>%
   group_by(farm, IDREC) %>%
-  summarise(totalStep = sum(conteo)) 
+  summarise(distance = sum(step), numStates = sum(conteo))
 
-DF_HARVEST_GAMMA_RES_2_S$totalStep <- dataTempTot$totalStep
 
-DF_HARVEST_GAMMA_RES_2_S$percentage_ST2 <- (DF_HARVEST_GAMMA_RES_2_S$numStates/DF_HARVEST_GAMMA_RES_2_S$totalStep)*100
+DF_HARVEST_GAMMA_AREA <- DF_HARVEST_GAMMA %>%
+  group_by(farm, IDREC, sec_area)%>%
+  summarise(conteo = sum(conteo)) %>%
+  mutate(conteo = 1)
 
-#VERIFICAR ESTO  
+DF_HARVEST_GAMMA_AREA <- DF_HARVEST_GAMMA_AREA  %>%
+  group_by(farm, IDREC)%>%
+  summarise(conteoArea = sum(conteo))
 
-HIST_ST1 <- DF_HARVEST_GAMMA_RES_2_S %>%
-  ggplot(col= "black", aes(x= farm, y= meanStep, 
+DF_HARVEST_GAMMA_RES$conteoArea <- DF_HARVEST_GAMMA_AREA$conteoArea
+
+rm(DF_HARVEST_GAMMA_AREA)
+
+
+
+
+
+###############
+
+DF_HARVEST_GAMMA_RES$areaNorm <- DF_HARVEST_GAMMA_RES$conteoArea/DF_HARVEST_GAMMA_RES$numStates
+
+HIST_ST1 <- DF_HARVEST_GAMMA_RES %>%
+  ggplot(col= "black", aes(x= farm, y= areaNorm, 
   ))+
   geom_boxplot(aes(fill= as.factor(farm)))+ 
   geom_point(size= 3, aes(fill= as.factor(farm)), shape= 21)+
   
-  geom_segment(aes(x= 0, xend= 3, y=mediaGeneral, yend= mediaGeneral), linetype= 2)+
+  #geom_segment(aes(x= 0, xend= 3, y=mediaGeneral, yend= mediaGeneral), linetype= 2)+
   scale_fill_manual(values= c("#AAAAAA", "white"))+
+#  facet_wrap(~f)+
   theme_bw()+
   theme(text = element_text(size = 20))+
   theme(legend.position = "None")+
-  labs(x= "Plantation", y= "Total distance  of steps in state Search", fill= "Plantation")
+  labs(x= "Plantation", y= "Normalized area traveled (in 10 m2 per step)", fill= "Plantation")
 
 
 
 FIG_STATES <- binaryPlot + HIST_ST1 + plot_layout(widths = c(2, 1))
 
 ggsave(FIG_STATES, filename= "../output/finalFigures/figStates_porFinca.pdf", height = 6, width = 12, device = "pdf")
+
+
+
+DF_RESUMEN <- DF_HARVEST_GAMMA_RES %>%
+  group_by(farm) %>%
+  summarise(meanTrees = mean(numStates), sdTrees = sd(numStates), meanArea = mean(conteoArea), sdArea = sd(conteoArea), meanAreaNorm = mean(areaNorm), sdAreaNorm = sd(areaNorm
+                                                                                                                                                                    ))
+
+
+
+######################3333
+
+
+
+FIG_MAP_CONTEO <- DF_HARVEST_GAMMA %>% 
+  #filter(state == "Collect")%>% 
+  unite("farm_ID", c(farm, IDREC)) %>% 
+  ggplot(aes(x= x, y = y)) +
+  geom_path(aes(col= as.factor(state)), size= 0.5)+
+  geom_point(size=0.5, aes(fill= "Visited Tree"))+ # es importante que sea path, porque así lo hace según coo estan ordenados los
+  scale_color_manual(values= mycolsStates)+
+  facet_wrap(~farm_ID, ncol = 3)+
+  geom_text(x = 140, y = 10, aes(label = observation), data = DF_HARVEST_RESUMEN)+
+  geom_text(x = 125, y = 10, label= "N =")+
+  theme_bw()+
+  theme(text = element_text(size = 15))+
+  theme(strip.background =element_rect(fill="white"))+
+  scale_y_continuous(breaks = seq(0, 120, by = 10))+
+  scale_x_continuous(breaks = seq(0, 150, by = 10))+
+  theme(panel.grid.major = element_line(color = "red",
+                                        size = 0.5,
+                                        linetype = 1))+
+  #theme(strip.background = element_blank(), panel.spacing = unit(0.8, "lines"), text = element_text(size = 15))+
+  labs(x= "X (in m)", y= "Y (in m)", col= "State", fill= "")
