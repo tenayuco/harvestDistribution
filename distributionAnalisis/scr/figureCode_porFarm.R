@@ -229,7 +229,7 @@ DF_HARVEST_TOTAL <- DF_HARVEST_GAMMA_RES
 DF_HARVEST_TOTAL$AR <- 0
 
 
-for (AR in c(1,2.5, 5, 10, 20, 40)){ 
+for (AR in c(1, 3, 5, 10, 20, 40)){ 
 
   DF_H_T <- DF_HARVEST_GAMMA_RES
   DF_H_T$AR <- AR
@@ -265,10 +265,10 @@ DF_HARVEST_TOTAL <- rbind(DF_HARVEST_TOTAL, DF_H_T)
 DF_HARVEST_TOTAL <- DF_HARVEST_TOTAL %>%
   filter(AR !=0)
 
-
+#DF_HARVEST_TOTAL$areaTotal <- (DF_HARVEST_TOTAL$AR*DF_HARVEST_TOTAL$AR)*DF_HARVEST_TOTAL$conteoArea
 
 HIST_ST1 <- DF_HARVEST_TOTAL %>%
-  ggplot(col= "black", aes(x= farm, y= areaNorm, 
+  ggplot(col= "black", aes(x= farm, y= conteoArea, 
   ))+
   geom_boxplot(aes(fill= as.factor(farm)))+ 
   geom_point(size= 3, aes(fill= as.factor(farm)), shape= 21)+
@@ -280,11 +280,13 @@ HIST_ST1 <- DF_HARVEST_TOTAL %>%
   theme(strip.background =element_rect(fill="white"))+
   theme(text = element_text(size = 20))+
   theme(legend.position = "None")+
-  theme(plot.title = element_text(hjust = 0.5))+
+  theme(plot.title = element_text(hjust = 0.5, size=20))+
   theme(panel.spacing = unit(0, "lines"))+
-  labs(x= "Plantation", y= "Normalized number of squares visited", fill= "Plantation", title = "Length of the square grain (in m)")
+  labs(x= "Plantation", y= "Number of visited squares", fill= "Plantation", title = "Length of the square side (in m)")
 
 ggsave(HIST_ST1, filename= "../output/finalFigures/figStates_porFinca_porGrano.png", height = 6, width = 12, device = "png")
+ggsave(HIST_ST1, filename= "../output/finalFigures/figStates_porFinca_porGrano.pdf", height = 6, width = 12, device = "pdf")
+
 
 write_csv(DF_HARVEST_TOTAL, file = "../data/areaPorGrano.csv")
 
