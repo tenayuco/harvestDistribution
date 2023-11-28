@@ -72,6 +72,14 @@ DF_RESUMEN_STATE <- DF_HARVEST_GAMMA %>%
 
 write.csv(DF_RESUMEN_STATE, file = "../data/df_resumen_perState.csv")
 
+DF_RESUMEN_TOTAL <- DF_HARVEST_GAMMA %>%
+  group_by(farm) %>%
+  summarise(medianDistance = median(step), meanDistance = mean(step), sdDistance = sd(step), minDistance = min(step), maxDistance = max(step), numStates = sum(conteo))
+
+write.csv(DF_RESUMEN_TOTAL, file = "../data/df_resumen_Total.csv")
+
+
+
 ################################################################################33
 #2. We plot the distributions
 
