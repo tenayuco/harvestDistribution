@@ -1,5 +1,5 @@
 ---
-title: "Supplementary Material 1. HMM analysis from: Harvesting trajectories in large-scale coffee plantations: ecological and managment drivers and implications"
+title: "Supplementary Material 1. HMM analysis from: Spatial trajectories of coffee harvesting in large-scale plantations: ecological and management drivers and implications"
 author: "Mora Van Cauwelaert et al., 2023"
 output:
   pdf_document: default

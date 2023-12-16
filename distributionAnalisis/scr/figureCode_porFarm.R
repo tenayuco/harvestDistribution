@@ -19,7 +19,7 @@ mycolsStates <-c("#fd9706", "#1b4a64" )
 #DF_HARVEST_GAMMA_C <- read.csv("/home/emilio/archivosTrabajandose/harvestDistribution/distributionAnalisis/data/analyzedData_figuresFINCA_C_.csv")
 
 
-DF_HARVEST_GAMMA_E <- read.csv("../data/analyzedData_figuresFINCA_E_.csv")
+DF_HARVEST_GAMMA_E <- read.csv("../data/analyzedData_figuresFINCA_O_.csv")
 DF_HARVEST_GAMMA_C <- read.csv("../data/analyzedData_figuresFINCA_C_.csv")
 
 
@@ -37,7 +37,7 @@ DF_HARVEST_GAMMA <- DF_HARVEST_GAMMA %>%
   separate(ID, into = c("farm", "IDREC"), sep = "_", remove = T)
 
 #We change the name of the rfam
-DF_HARVEST_GAMMA$farm[DF_HARVEST_GAMMA$farm== "E"] <- "O"
+#DF_HARVEST_GAMMA$farm[DF_HARVEST_GAMMA$farm== "E"] <- "O"
 
 #this is made to know the number of steps per fram
 DF_HARVEST_RESUMEN <- DF_HARVEST_GAMMA %>%
@@ -59,11 +59,12 @@ FIG_MAP_GAMMA<- DF_HARVEST_GAMMA %>%
   theme(text = element_text(size = 15))+
   theme(strip.background =element_rect(fill="white"))+
   #theme(strip.background = element_blank(), panel.spacing = unit(0.8, "lines"), text = element_text(size = 15))+
-  labs(x= "X (in m)", y= "Y (in m)", col= "State", fill= "")
+  labs(x= "X (m)", y= "Y (m)", col= "State", fill= "")
 
 
 #ggsave(FIG_MAP_GAMMA, filename= "/home/emilio/archivosTrabajandose/harvestDistribution/distributionAnalisis/output/finalFigures/mapHarvest_porFarm.png", height = 14, width = 12.5, device = "png")
 ggsave(FIG_MAP_GAMMA, filename= "../output/finalFigures/mapHarvest_porFarm.png", height = 14, width = 12.5, device = "png")
+ggsave(FIG_MAP_GAMMA, filename= "../output/finalFigures/mapHarvest_porFarm.eps", height = 14, width = 12.5, device = "eps")
 
 #this is to know the range and mean for each satae
 DF_RESUMEN_STATE <- DF_HARVEST_GAMMA %>%
@@ -85,7 +86,7 @@ write.csv(DF_RESUMEN_TOTAL, file = "../data/df_resumen_Total.csv")
 
 
 #DF_TOTAL_MIN <- read.csv("archivosTrabajandose/harvestDistribution/distributionAnalisis/output/DF_TOTAL_AIC_porFincas.csv")
-DF_TOTAL_MIN <- read.csv("../output/DF_TOTAL_AIC_porFincas.csv")
+DF_TOTAL_MIN <- read.csv("../output/dataFramesGenerated/DF_TOTAL_AIC_porFincas.csv")
 
 
 
@@ -218,6 +219,7 @@ DIS_PLOT_TOTAL <- DIS_PLOT_COM_C + DIS_PLOT_COM_O
 
 
 ggsave(DIS_PLOT_TOTAL, filename= "../output/finalFigures/histoGAMMA_porPlantacion.png", height = 6, width = 15, device = "png")
+ggsave(DIS_PLOT_TOTAL, filename= "../output/finalFigures/histoGAMMA_porPlantacion.eps", height = 6, width = 15, device = "eps")
 
 
 ######################################################################3
@@ -293,60 +295,9 @@ HIST_ST1 <- DF_HARVEST_TOTAL %>%
   labs(x= "Plantation", y= "Number of visited squares", fill= "Plantation", title = "Length of the square side (in m)")
 
 ggsave(HIST_ST1, filename= "../output/finalFigures/figStates_porFinca_porGrano.png", height = 6, width = 12, device = "png")
-ggsave(HIST_ST1, filename= "../output/finalFigures/figStates_porFinca_porGrano.pdf", height = 6, width = 12, device = "pdf")
+ggsave(HIST_ST1, filename= "../output/finalFigures/figStates_porFinca_porGrano.eps", height = 6, width = 12, device = "eps")
 
 
 write_csv(DF_HARVEST_TOTAL, file = "../data/areaPorGrano.csv")
 
 
-
-
-#binaryPlot <- DF_HARVEST_GAMMA %>%
- # unite("farm_ID", c(farm, IDREC),remove = FALSE) %>% 
-  #ggplot(aes(x= contador , y= farm_ID, fill= as.factor(state)))+
-  #geom_tile(col= "black")+
-  #facet_wrap(~farm, scales= "free_y", ncol= 1)+
-  #scale_fill_manual(values= c("#FFFFFF", "black"))+
-  # scale_y_continuous(breaks=seq(1,6,1))+
-  #theme_bw()+
-  #theme(strip.background =element_rect(fill="white"))+
-  #theme(text = element_text(size = 20))+
-  #theme(legend.position = "bottom")+
-  #labs(x= "Steps", y= "ID", fill= "State", shape= "State")
-
-
-#FIG_STATES <- binaryPlot + HIST_ST1 + plot_layout(widths = c(2, 1))
-
-#ggsave(FIG_STATES, filename= "../output/finalFigures/figStates_porFinca.pdf", height = 6, width = 12, device = "pdf")
-
-
-#DF_RESUMEN <- DF_HARVEST_GAMMA_RES %>%
- # group_by(farm) %>%
-  #summarise(meanTrees = mean(numStates), sdTrees = sd(numStates), meanArea = mean(conteoArea), sdArea = sd(conteoArea), meanAreaNorm = mean(areaNorm), sdAreaNorm = sd(areaNorm  ))
-                                                                                                                                                                  
-
-
-######################3333
-
-
-# 
-# FIG_MAP_CONTEO <- DF_HARVEST_GAMMA %>% 
-#   #filter(state == "Collect")%>% 
-#   unite("farm_ID", c(farm, IDREC)) %>% 
-#   ggplot(aes(x= x, y = y)) +
-#   geom_path(aes(col= as.factor(state)), size= 0.5)+
-#   geom_point(size=0.5, aes(fill= "Visited Tree"))+ # es importante que sea path, porque así lo hace según coo estan ordenados los
-#   scale_color_manual(values= mycolsStates)+
-#   facet_wrap(~farm_ID, ncol = 3)+
-#   geom_text(x = 140, y = 10, aes(label = observation), data = DF_HARVEST_RESUMEN)+
-#   geom_text(x = 125, y = 10, label= "N =")+
-#   theme_bw()+
-#   theme(text = element_text(size = 15))+
-#   theme(strip.background =element_rect(fill="white"))+
-#   scale_y_continuous(breaks = seq(0, 120, by = 10))+
-#   scale_x_continuous(breaks = seq(0, 150, by = 10))+
-#   theme(panel.grid.major = element_line(color = "red",
-#                                         size = 0.5,
-#                                         linetype = 1))+
-#   #theme(strip.background = element_blank(), panel.spacing = unit(0.8, "lines"), text = element_text(size = 15))+
-#   labs(x= "X (in m)", y= "Y (in m)", col= "State", fill= "")
